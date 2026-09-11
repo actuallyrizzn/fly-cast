@@ -30,9 +30,24 @@ On the ngram laptop: `~/fly-cast` (separate from `~/fly-hero`).
 
 ```bash
 flycast say "hello there"
+flycast replay fixtures/events_midtempo.jsonl
+flycast live fixtures/events_midtempo.jsonl --state-path ~/fly-cast/overlay_state.json
+flycast overlay serve   # http://127.0.0.1:8766/
 ```
 
-Untrained output will be nonsense until Level A training lands. That is expected.
+Untrained free-write is weak; **live default is picker** from `fixtures/reply_bank.tsv`.
+
+## How chat will plug in later
+
+Gameplay already emits `CHAT` / `SOCIAL` cues into the same event file + guard path (`flycast.external.reply_to_message`). Fixture: `fixtures/chat_social.tsv`.
+
+Later, a platform adapter (Twitch / Discord / something else — **Mark picks**) would:
+
+1. Append `{cue: CHAT|SOCIAL, detail: message}` to the events JSONL (or call `reply_to_message` directly).
+2. Run the reply through the **guard** (URLs stripped, blocklist, kill switch, line log).
+3. Keep **`approve_mode=True`** for any public outbound post until Mark turns that off for a named platform.
+
+This repo does **not** register bot accounts or choose a stream host.
 
 ## Data
 
