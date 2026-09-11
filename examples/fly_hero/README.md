@@ -5,6 +5,7 @@ This example wires **Fly Cast** (generic connectome → English mouth) to
 
 If you are forking Fly Cast for your own domain, **copy this folder** and rename
 it. Swap the fixtures, cue lists, and lexicon — leave `src/flycast/` alone.
+Longer guide: [docs/PROFILES.md](../../docs/PROFILES.md).
 
 ## What lives here
 
@@ -33,3 +34,8 @@ Default profile when unset is this directory (flagship example).
 - Laptop install: `~/fly-cast` beside `~/fly-hero`; share an events JSONL.
 - Internal gating / feasibility lived on DSC Tasks (Fly Cast list); not required to use the code.
 - Stream platform, bot accounts, and music policy are deliberately out of scope here.
+
+## License
+
+This example’s prose, TOML, banks, lexicon, and fixtures are **CC-BY-SA-4.0**.
+The Fly Cast library code is **AGPL-3.0-or-later**. See [LICENSING.md](../../LICENSING.md).

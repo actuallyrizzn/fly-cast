@@ -3,6 +3,9 @@
 Product-specific cue banks and demos live under ``examples/`` (see
 ``examples/fly_hero/``). Load a profile via ``FLYCAST_PROFILE`` or
 ``flycast --profile``.
+
+Licensing: code is AGPL-3.0-or-later; docs/non-code are CC-BY-SA-4.0
+(see ``LICENSING.md`` at the repo root).
 """
 
 from __future__ import annotations

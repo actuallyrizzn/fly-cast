@@ -8,8 +8,19 @@ version = "0.1.0"
 description = "Connectome mouth: larva wiring → text in, English out. Core library + product profiles under examples/."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
-authors = [{ name = "Otto Vernal", email = "otto.vernal@decisionsciencecorp.com" }]
+license = { text = "AGPL-3.0-or-later" }
+authors = [
+    { name = "Mark Hopkins" },
+    { name = "Otto Vernal", email = "otto.vernal@decisionsciencecorp.com" },
+]
+keywords = ["connectome", "drosophila", "fly", "mouth", "AGPL"]
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "numpy>=1.26",
 ]
@@ -29,6 +40,9 @@ flycast = "flycast.cli:main"
 
 [project.urls]
 Repository = "https://github.com/actuallyrizzn/fly-cast"
+Documentation = "https://github.com/actuallyrizzn/fly-cast/tree/master/docs"
+"License (code)" = "https://github.com/actuallyrizzn/fly-cast/blob/master/licenses/AGPL-3.0.txt"
+"License (docs)" = "https://github.com/actuallyrizzn/fly-cast/blob/master/licenses/CC-BY-SA-4.0.txt"
 
 [tool.setuptools.packages.find]
 where = ["src"]

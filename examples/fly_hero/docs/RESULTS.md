@@ -46,3 +46,9 @@ Checkpoint: `checkpoints/level_a/` (local; not in git).
 |---|---|---|
 | A | was shore. tiny max her rainbow… | hair toy was standing in the red… |
 | B | was note a knee. she knew it was named beep. | always near the playing a time… |
+
+## License
+
+This results write-up is **CC-BY-SA-4.0**. TinyStories train excerpt: **CDLA-Sharing-1.0**.
+See [LICENSING.md](../../../LICENSING.md).
+
