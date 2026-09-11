@@ -26,3 +26,23 @@ On this small subset the no-fly control wins. That is an honesty finding, not a 
 Weird/broken English — expected at Level A on a tiny CPU subset. Otto QA gate #3738: English-shaped enough to keep climbing (picker-first for gameplay).
 
 Checkpoint: `checkpoints/level_a/` (local; not in git).
+
+## Level B — train input embeds + readout (W frozen)
+
+- **Date:** 2026-09-11
+- **Method:** start from Level A ridge readout; SGD on embed + readout (wiring layout frozen). Held-out: `fixtures/reaction_heldout.txt`. Train: TinyStories subset head. Script: `tools/compare_level_b.py`.
+
+| Control | Held-out reaction CE |
+|---|---|
+| Level A fly | 6.29 |
+| Level B fly | 7.66 |
+| Scramble (A fit) | 6.33 |
+
+**B did not beat A** (+1.37 CE worse). Gate #3752: **stay on A + picker** as live default; B experimental only. **Do not open Level C.**
+
+### Samples
+
+| | Missed it | Song starting |
+|---|---|---|
+| A | was shore. tiny max her rainbow… | hair toy was standing in the red… |
+| B | was note a knee. she knew it was named beep. | always near the playing a time… |

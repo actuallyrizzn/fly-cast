@@ -111,6 +111,87 @@ def train_fly_level_a(
     brain._logit_bias = (base_b * best_gain).astype(np.float32)
     return TrainResult(losses=[best_loss], final_loss=best_loss)
 
+
+def train_fly_level_b(
+    brain: FlyBrain,
+    tokenizer: Tokenizer,
+    lines: list[str],
+    *,
+    epochs: int = 8,
+    lr: float = 0.05,
+    max_pairs: int | None = 400,
+    seed: int = 0,
+) -> TrainResult:
+    """Level B: freeze wiring ``W``, train input embeds + output readout with SGD.
+
+    Does not add/remove synapses — only how signals enter (embed→inject) and leave (readout).
+    """
+    rng = np.random.default_rng(seed)
+    pairs = _pairs(tokenizer, lines, max_pairs=max_pairs)
+    if not pairs:
+        raise ValueError("no training pairs")
+    losses: list[float] = []
+    for _ in range(epochs):
+        order = np.arange(len(pairs))
+        rng.shuffle(order)
+        total = 0.0
+        for idx in order:
+            ctx, target = pairs[int(idx)]
+            brain.reset()
+            for tid in ctx:
+                brain.inject_token(int(tid))
+            state = brain.state.astype(np.float64)
+            logits = state @ brain.readout.astype(np.float64)
+            bias = getattr(brain, "_logit_bias", None)
+            if bias is not None:
+                logits = logits + bias.astype(np.float64)
+            logits = logits - logits.max()
+            ex = np.exp(logits)
+            probs = ex / ex.sum()
+            total += float(-np.log(probs[target] + 1e-12))
+            # dL/dlogits
+            dlogits = probs
+            dlogits[target] -= 1.0
+            # readout grad
+            dW = np.outer(state, dlogits)
+            brain.readout = (brain.readout.astype(np.float64) - lr * dW).astype(np.float32)
+            if bias is not None:
+                brain._logit_bias = (bias.astype(np.float64) - lr * dlogits).astype(np.float32)
+            else:
+                brain._logit_bias = (-lr * dlogits).astype(np.float32)
+            # embed of last context token (input pathway)
+            last = int(ctx[-1])
+            # approximate: push embed via inject mapping sensitivity
+            # dstate/dembed ~ input_scale on inject slots; use outer with dlogits through readout
+            dstate = brain.readout.astype(np.float64) @ dlogits
+            pool = brain.inject
+            dim = brain.embed.shape[1]
+            dembed = np.zeros(dim, dtype=np.float64)
+            for i, neuron in enumerate(pool):
+                dembed[i % dim] += float(dstate[int(neuron)]) * brain.input_scale
+            brain.embed[last] = (brain.embed[last].astype(np.float64) - lr * dembed).astype(np.float32)
+        losses.append(total / len(pairs))
+    return TrainResult(losses=losses, final_loss=losses[-1])
+
+
+def eval_fly_ce(
+    brain: FlyBrain,
+    tokenizer: Tokenizer,
+    lines: list[str],
+    *,
+    max_pairs: int | None = 400,
+) -> float:
+    states, targets = _collect_fly_examples(brain, tokenizer, lines, max_pairs=max_pairs)
+    total = 0.0
+    for i, target in enumerate(targets):
+        logits = states[i].astype(np.float64) @ brain.readout.astype(np.float64)
+        bias = getattr(brain, "_logit_bias", None)
+        if bias is not None:
+            logits = logits + bias.astype(np.float64)
+        total += _nll(logits, int(target))
+    return total / len(targets)
+
+
 def train_no_fly(
     pred: NoFlyPredictor,
     tokenizer: Tokenizer,
