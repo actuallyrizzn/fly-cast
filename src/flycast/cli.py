@@ -34,6 +34,16 @@ def main(argv: list[str] | None = None) -> int:
     rp = sub.add_parser("replay", help="Replay events.jsonl into picked reactions")
     rp.add_argument("events", type=Path)
     rp.add_argument("--bank", type=Path, default=None)
+    rp.add_argument("--guard", action="store_true", help="Run lines through safety guard")
+    rp.add_argument("--stop-path", type=Path, default=None, help="Kill-switch file path")
+    rp.add_argument("--line-log", type=Path, default=None, help="Append JSONL line log")
+
+    gd = sub.add_parser("guard", help="Check one line through the safety guard")
+    gd.add_argument("text", nargs="+", help="Candidate mouth line")
+    gd.add_argument("--cues", default="", help="Cue string for the log")
+    gd.add_argument("--mode", default="picked")
+    gd.add_argument("--stop-path", type=Path, default=None)
+    gd.add_argument("--line-log", type=Path, default=None)
 
     args = parser.parse_args(argv)
     if args.cmd == "say":
@@ -64,11 +74,29 @@ def main(argv: list[str] | None = None) -> int:
         print(result.text)
         return 0
     if args.cmd == "replay":
+        from flycast.guard import Guard
         from flycast.replay import replay
 
-        for line in replay(args.events, bank_path=args.bank):
+        guard = None
+        if args.guard or args.stop_path or args.line_log:
+            guard = Guard(
+                stop_path=args.stop_path or (Path.home() / "fly-cast" / "STOP"),
+                log_path=args.line_log,
+            )
+        for line in replay(args.events, bank_path=args.bank, guard=guard):
             print(line)
         return 0
+    if args.cmd == "guard":
+        from flycast.guard import Guard
+
+        g = Guard(
+            stop_path=args.stop_path or (Path.home() / "fly-cast" / "STOP"),
+            log_path=args.line_log,
+        )
+        result = g.check(" ".join(args.text), cues=args.cues, mode=args.mode)
+        print(f"allowed={result.allowed} reason={result.reason} mode={result.mode}")
+        print(result.filtered or "(silent)")
+        return 0 if result.allowed else 1
     return 2
 
 
