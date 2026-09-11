@@ -45,6 +45,24 @@ def main(argv: list[str] | None = None) -> int:
     gd.add_argument("--stop-path", type=Path, default=None)
     gd.add_argument("--line-log", type=Path, default=None)
 
+    ov = sub.add_parser("overlay", help="Laptop overlay (local browser)")
+    ov_sub = ov.add_subparsers(dest="overlay_cmd", required=True)
+    ov_set = ov_sub.add_parser("set", help="Write overlay state JSON")
+    ov_set.add_argument("--line", default="")
+    ov_set.add_argument("--mode", default="picked", choices=["picked", "wrote", "silent"])
+    ov_set.add_argument(
+        "--status",
+        default="live",
+        choices=["live", "events-missing", "hands-offline", "silent"],
+    )
+    ov_set.add_argument("--cues", default="")
+    ov_set.add_argument("--state-path", type=Path, default=None)
+    ov_srv = ov_sub.add_parser("serve", help="Serve overlay HTML on localhost")
+    ov_srv.add_argument("--state-path", type=Path, default=None)
+    ov_srv.add_argument("--host", default="127.0.0.1")
+    ov_srv.add_argument("--port", type=int, default=8766)
+    ov_srv.add_argument("--once", action="store_true", help="Start and print URL then exit (tests)")
+
     args = parser.parse_args(argv)
     if args.cmd == "say":
         prompt = " ".join(args.prompt)
@@ -97,6 +115,39 @@ def main(argv: list[str] | None = None) -> int:
         print(f"allowed={result.allowed} reason={result.reason} mode={result.mode}")
         print(result.filtered or "(silent)")
         return 0 if result.allowed else 1
+    if args.cmd == "overlay":
+        from flycast.overlay import OverlayServer, OverlayState, default_state_path, write_state
+
+        state_path = args.state_path or default_state_path()
+        if args.overlay_cmd == "set":
+            write_state(
+                state_path,
+                OverlayState(
+                    line=args.line,
+                    mode=args.mode,
+                    status=args.status,
+                    cues=args.cues,
+                ),
+            )
+            print(f"wrote {state_path}")
+            return 0
+        if args.overlay_cmd == "serve":
+            srv = OverlayServer(state_path=state_path, host=args.host, port=args.port)
+            host, port = srv.start()
+            print(f"overlay http://{host}:{port}/  state={state_path}")
+            if args.once:
+                srv.stop()
+                return 0
+            try:
+                import time
+
+                while True:
+                    time.sleep(3600)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                srv.stop()
+            return 0
     return 2
 
 

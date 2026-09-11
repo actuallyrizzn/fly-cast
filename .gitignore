@@ -13,4 +13,4 @@ checkpoints/
 *.pth
 runs/
 STOP
-checkpoints/
+artifacts/

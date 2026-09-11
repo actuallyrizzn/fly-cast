@@ -68,3 +68,41 @@ def test_replay_with_guard(tmp_path: Path):
         )
         == 0
     )
+
+
+def test_overlay_set_and_serve_once(tmp_path: Path):
+    state = tmp_path / "state.json"
+    assert (
+        main(
+            [
+                "overlay",
+                "set",
+                "--line",
+                "That's a wrap.",
+                "--mode",
+                "picked",
+                "--status",
+                "live",
+                "--cues",
+                "SONG_END",
+                "--state-path",
+                str(state),
+            ]
+        )
+        == 0
+    )
+    assert state.is_file()
+    assert (
+        main(
+            [
+                "overlay",
+                "serve",
+                "--state-path",
+                str(state),
+                "--port",
+                "0",
+                "--once",
+            ]
+        )
+        == 0
+    )
