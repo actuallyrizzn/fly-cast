@@ -26,6 +26,11 @@ def main(argv: list[str] | None = None) -> int:
     of.add_argument("--epochs", type=int, default=60)
     of.add_argument("--seed", type=int, default=0)
 
+    pk = sub.add_parser("pick", help="Pick a reply from candidates given a prompt")
+    pk.add_argument("prompt", help="Prompt / cue text")
+    pk.add_argument("candidates", nargs="+", help="Candidate reply strings")
+    pk.add_argument("--seed", type=int, default=0)
+
     args = parser.parse_args(argv)
     if args.cmd == "say":
         prompt = " ".join(args.prompt)
@@ -45,6 +50,15 @@ def main(argv: list[str] | None = None) -> int:
             f"fly_ok={result['fly_ok']}"
         )
         return 0 if result["fly_ok"] else 1
+    if args.cmd == "pick":
+        from flycast.picker import pick
+
+        tok = Tokenizer.build([args.prompt, *args.candidates], max_vocab=512)
+        brain = build_fly_brain(vocab_size=tok.size, seed=args.seed)
+        result = pick(brain, tok, args.prompt, list(args.candidates))
+        print(f"mode={result.mode} score={result.score:.4f}")
+        print(result.text)
+        return 0
     return 2
 
 
