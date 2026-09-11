@@ -17,7 +17,12 @@ class TrainResult:
     final_loss: float
 
 
-def _pairs(tokenizer: Tokenizer, lines: list[str]) -> list[tuple[list[int], int]]:
+def _pairs(
+    tokenizer: Tokenizer,
+    lines: list[str],
+    *,
+    max_pairs: int | None = None,
+) -> list[tuple[list[int], int]]:
     pairs: list[tuple[list[int], int]] = []
     bos = tokenizer.token_to_id[BOS]
     eos = tokenizer.token_to_id[EOS]
@@ -25,6 +30,8 @@ def _pairs(tokenizer: Tokenizer, lines: list[str]) -> list[tuple[list[int], int]
         ids = [bos] + tokenizer.encode(line) + [eos]
         for i in range(len(ids) - 1):
             pairs.append((ids[: i + 1], ids[i + 1]))
+            if max_pairs is not None and len(pairs) >= max_pairs:
+                return pairs
     return pairs
 
 
@@ -43,10 +50,11 @@ def train_fly_level_a(
     *,
     ridge: float = 1e-2,
     seed: int = 0,
+    max_pairs: int | None = 800,
 ) -> TrainResult:
     """Fit readout by ridge regression (dual form). Embeddings and ``W`` stay fixed."""
     del seed
-    pairs = _pairs(tokenizer, lines)
+    pairs = _pairs(tokenizer, lines, max_pairs=max_pairs)
     if not pairs:
         raise ValueError("no training pairs")
     states: list[np.ndarray] = []
