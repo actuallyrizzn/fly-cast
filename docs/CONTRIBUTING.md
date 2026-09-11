@@ -1,13 +1,13 @@
 # Contributing
 
-Keep the core generic. Domain banks and cues go under `examples/`.
+Domain banks and cues live under `examples/`. Shared mouth code lives under `src/flycast/`.
 
 ## License
 
 | You contribute | License |
 |----------------|---------|
 | Code | **AGPL-3.0-or-later** |
-| Docs / fixtures / profiles | **CC-BY-SA-4.0** (call out third-party terms in the PR) |
+| Docs / fixtures / profiles | **CC-BY-SA-4.0** (name third-party terms in the PR when they apply) |
 
 [LICENSING.md](../LICENSING.md).
 
@@ -31,18 +31,14 @@ Coverage gate: **≥90%**.
 | Your domain | `examples/<name>/` (copy fly_hero) |
 | Docs | `docs/` |
 
-No hard-coded one-game cue list in the library. Use `profile.toml`.
+Cue vocabulary for a product belongs in that product’s `profile.toml`.
 
 ## Honesty
 
-Training or “better English from the wiring” PRs:
-
-1. Report fly vs scramble vs no-fly (or say why a control does not apply).
-2. Do not bury a losing fly condition.
-3. Update `examples/.../docs/RESULTS.md` (or your example’s results) — numbers beat slogans.
+PRs that change training or report English quality include fly vs scramble vs no-fly (or state which control applies), with numbers in `examples/.../docs/RESULTS.md` or the matching example results file.
 
 ## PR bar
 
-Small diffs. Tests for new branches. No secrets. No “we taught a fly English” without a table. No insect-cosplay lexicon in the flagship profile.
+Small diffs. Tests for new branches. Credentials belong in local vaults, not the repo.
 
 Issues: [actuallyrizzn/fly-cast](https://github.com/actuallyrizzn/fly-cast).

@@ -1,6 +1,6 @@
 # Safety
 
-Outbound lines go through **`flycast.guard.Guard`** before overlay, guarded stdout, or any later public path.
+Outbound lines go through **`flycast.guard.Guard`** before overlay, guarded stdout, or an approve queue.
 
 ```mermaid
 flowchart LR
@@ -36,18 +36,13 @@ rm -f ~/fly-cast/STOP
 
 ## Chat / social
 
-`reply_to_message` picks a bank reply and runs the guard. It does not post.
+`reply_to_message` picks a bank reply and runs the guard. Public outbound uses `approve_mode` and a platform adapter you wire separately.
 
-| Rule | |
-|------|--|
-| `approve_mode=True` | Default for anything that could go public |
-| Log destination | `approve-queue` while approve mode is on |
-| Accounts | Not in this repo — name a platform before you turn approve off |
-
-Fixture chat lines: e.g. `examples/fly_hero/fixtures/chat_social.tsv`.
+| Setting | Effect |
+|---------|--------|
+| `approve_mode=True` | Log destination `approve-queue`; human gate before post |
+| Fixture lines | e.g. `examples/fly_hero/fixtures/chat_social.tsv` |
 
 ## HIT throttle
 
-Live follow spaces `HIT` reactions (~5s event time by default) so strum spam does not own the overlay. Profile `interesting` cues still fire.
-
-This is a mouth guard, not a moderation product and not a ToS waiver.
+Live follow spaces `HIT` reactions (~5s event time by default). Profile `interesting` cues still fire on their own schedule.

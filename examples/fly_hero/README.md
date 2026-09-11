@@ -1,6 +1,6 @@
 # Fly Hero mouth profile
 
-Wires Fly Cast to [Fly Hero](https://github.com/actuallyrizzn/fly-hero) / Clone Hero. Fork the folder for a different domain; leave `src/flycast/` alone. Guide: [docs/PROFILES.md](../../docs/PROFILES.md).
+Wires Fly Cast to [Fly Hero](https://github.com/actuallyrizzn/fly-hero) / Clone Hero. Fork the folder for a different domain. Guide: [docs/PROFILES.md](../../docs/PROFILES.md).
 
 ## Contents
 
@@ -10,7 +10,7 @@ Wires Fly Cast to [Fly Hero](https://github.com/actuallyrizzn/fly-hero) / Clone 
 | `fixtures/reply_bank.tsv` | Picker candidates per cue |
 | `fixtures/fly_lexicon.tsv` | Weighted mouth phrases |
 | `fixtures/events_midtempo.jsonl` | Midtempo session for offline replay |
-| `fixtures/chat_social.tsv` | Fake CHAT/SOCIAL lines (no accounts) |
+| `fixtures/chat_social.tsv` | Fake CHAT/SOCIAL lines |
 | `docs/RESULTS.md` | Level A/B honesty numbers |
 
 ## Run
@@ -29,7 +29,6 @@ Unset profile → this directory is the default.
 | Detail | |
 |--------|--|
 | Laptop paths | `~/fly-cast` next to `~/fly-hero`; shared events JSONL |
-| Stream / bots / music | Out of scope here |
 
 ## License
 

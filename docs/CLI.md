@@ -12,7 +12,7 @@ flycast --profile PATH <command> ...
 
 | Command | Purpose |
 |---------|---------|
-| `say PROMPT…` | Free-write (research; weak until trained) |
+| `say PROMPT…` | Free-write continuation |
 | `overfit PATH` | Overfit a tiny practice file; fly vs scramble vs no-fly losses |
 | `pick PROMPT CAND…` | Score candidates; print winner |
 | `replay EVENTS.jsonl` | Offline reactions from a recorded session |

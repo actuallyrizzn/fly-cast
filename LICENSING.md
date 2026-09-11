@@ -21,12 +21,12 @@ Prose and profiles should remix with attribution and share-alike without draggin
 
 Executable / library source → AGPL. Narrative, TSV banks, TOML profiles, markdown → CC-BY-SA. When in doubt, split by portion.
 
-## Third-party (not our dual license)
+## Third-party material
 
 | Artifact | Upstream | Notes |
 |----------|----------|--------|
 | `src/flycast/data/` larva CSVs | **CC-BY** (Winding et al. 2023 via Netzschleuder) | [data README](src/flycast/data/README.md) — keep attribution |
-| `fixtures/tinystories_subset.txt` | **CDLA-Sharing-1.0** (TinyStories) | Honesty-gate excerpt; not our authorship |
+| `fixtures/tinystories_subset.txt` | **CDLA-Sharing-1.0** (TinyStories) | Honesty-gate excerpt |
 
 ## Copyright
 

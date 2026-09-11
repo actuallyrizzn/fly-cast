@@ -14,7 +14,7 @@
 | Scramble | 3.02 |
 | No-fly (last-K embeds) | 2.51 |
 
-No-fly wins on this subset. Honesty finding, not a kill shot — live path goes picker-first. Do not claim the wiring is why it talks from these numbers.
+No-fly wins on this subset. Live path uses picker-first. Checkpoint: `checkpoints/level_a/` (local).
 
 ### Samples (fly, free-write)
 
@@ -23,8 +23,6 @@ No-fly wins on this subset. Honesty finding, not a kill shot — live path goes 
 
 > The little girl  
 > named their a tried fin relax now his soft. hurts hole " lay, don't one day, …
-
-Broken English is expected at this size. Checkpoint: `checkpoints/level_a/` (local; not in git).
 
 ## Level B — embed + readout (W frozen)
 
@@ -42,7 +40,7 @@ Broken English is expected at this size. Checkpoint: `checkpoints/level_a/` (loc
 | Level B fly | 7.66 |
 | Scramble (A fit) | 6.33 |
 
-B loses to A (+1.37 CE). Live default stays **A + picker**. B is experimental only. Level C stays closed until that changes.
+B is +1.37 CE worse than A. Live default: **A + picker**.
 
 ### Samples
 

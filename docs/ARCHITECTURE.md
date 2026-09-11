@@ -35,20 +35,18 @@ One JSON object per line:
 | Field | Role |
 |-------|------|
 | `t` | Event time (seconds) — HIT throttle + event-time dedupe |
-| `cue` | Token from the profile (or anything; unknown cues still prompt) |
+| `cue` | Token from the profile (unknown cues still prompt) |
 | `detail` | Optional — lane, chat snippet, etc. |
 
-Clone Hero is not baked into the core. The profile decides what is interesting (`interesting` cues, plus optional `HIT` + detail match).
+The active profile sets which cues fire (`interesting`, plus optional `HIT` + detail match).
 
 ## Live default: picker
 
-Free-write loses on small honesty gates. Live scores a **reply bank** under the prompt (`mode=picked`). Lexicon is a soft shove toward phrases you actually want on screen.
-
-`flycast say` and Level A/B generate stay for research. They are not the product path.
+Live scores a **reply bank** under the prompt (`mode=picked`). Lexicon is a soft weight toward preferred phrases. `flycast say` and Level A/B generate are available for research and honesty runs.
 
 ## Honesty
 
-If you train, report all three:
+Training reports include:
 
 | Control | Meaning |
 |---------|---------|
@@ -56,10 +54,6 @@ If you train, report all three:
 | Scramble | Same density, partners permuted |
 | No-fly | Readout on recent embeds only |
 
-If scramble or no-fly wins, say so. Don’t sell “the wiring is why it talks” off a losing table. Our flagship numbers: [`examples/fly_hero/docs/RESULTS.md`](../examples/fly_hero/docs/RESULTS.md).
-
-## Out of core on purpose
-
-Stream host, bot accounts, music policy, GPU Level C magnitude retunes on `W` — product decisions. Fork the library without carrying our ops.
+Flagship numbers: [`examples/fly_hero/docs/RESULTS.md`](../examples/fly_hero/docs/RESULTS.md).
 
 [Profiles](PROFILES.md) · [CLI](CLI.md) · [Safety](SAFETY.md)

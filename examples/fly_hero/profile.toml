@@ -1,6 +1,6 @@
 # Fly Hero / Clone Hero mouth — product profile
 name = "fly_hero"
-description = "Gameplay reactions for Fly Hero (Clone Hero). Not insect cosplay."
+description = "Gameplay reactions for Fly Hero (Clone Hero)."
 
 [paths]
 # Paths are relative to this profile directory.
