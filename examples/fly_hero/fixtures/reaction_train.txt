@@ -1,0 +1,82 @@
+# Reaction-shaped free-write train corpus (Fly Hero mouth).
+# Held-out lines live in reaction_heldout.txt — do not copy them here.
+# Built from reply bank + lexicon phrases + light paraphrases.
+
+Nice catch.
+On time.
+Got it.
+Okay.
+Dropped that one.
+Missed it.
+That note got away.
+Oh well.
+Streak going.
+Keep it rolling.
+Still hitting.
+Cool.
+Overstrum ease up.
+Too early there.
+Wait for it next time.
+Song starting.
+Here we go.
+Highway's live.
+Alright.
+Song over.
+That's a wrap.
+Final chart done.
+Done.
+Score is in.
+Run finished.
+Results are up.
+Heard that.
+Reading chat.
+Got your message.
+Saw the mention.
+Noting that reply.
+Caught the ping.
+Missed a note on green.
+Dropped a fret there.
+Nice hit on time.
+Got the strum clean.
+Streak still going strong.
+Keep rolling through the chart.
+Still hitting those notes.
+Song is starting now.
+Here we go again.
+Highway live play clean.
+Song is over now.
+That is a wrap for the chart.
+Final notes done.
+Score came in clean.
+This run finished.
+Results posted for the run.
+Ease up on the overstrum.
+Too early on that strum.
+Wait for the note next time.
+Caught that hit.
+On time with the strum.
+Missed the yellow note.
+Dropped red there.
+Streak climbing keep going.
+Keep the streak rolling.
+Song starting get ready.
+Wrap the song clean.
+Highway chart is live.
+Play on through the frets.
+Clean frets this time.
+Hit green on time.
+Hit red on time.
+Missed blue that time.
+Overstrum on orange ease up.
+Score locked for the song.
+Chat line heard that.
+Social ping caught it.
+Reading the chat line.
+Noting the social reply.
+Okay that works.
+Cool still going.
+Alright song starts.
+Done with that chart.
+Oh well missed one.
+Got your chat message.
+Saw that social mention.

@@ -49,6 +49,46 @@ B is +1.37 CE worse than A. Live default: **A + picker**.
 | A | was shore. tiny max her rainbow… | hair toy was standing in the red… |
 | B | was note a knee. she knew it was named beep. | always near the playing a time… |
 
+## Reaction free-write climb (CPU)
+
+| | |
+|--|--|
+| Date | 2026-09-11 |
+| Train | `examples/fly_hero/fixtures/reaction_train.txt` (78 lines; bank + paraphrases) |
+| Held-out | `examples/fly_hero/fixtures/reaction_heldout.txt` (10 lines; no exact leak) |
+| Script | `tools/climb_reaction_freewrite.py` |
+| Path doc | [FREEWRITE-CLIMB.md](FREEWRITE-CLIMB.md) |
+
+### Level A honesty (reaction held-out CE)
+
+| Control | CE (lower better) |
+|---|---|
+| Fly (A) | 3.36 |
+| Scramble | 3.35 |
+| No-fly | 3.59 |
+
+Fly beats no-fly on reaction text (unlike TinyStories). Scramble ties fly within noise.
+
+### Level B vs A
+
+| Control | CE |
+|---|---|
+| Level A fly | 3.36 |
+| Level B fly | 4.20 |
+| Scramble (A) | 3.35 |
+
+B is **+0.83 CE worse** than A (gate margin 0.05). **Gate: B_LOSES.** Level C stays parked. Live default stays **A + picker**.
+
+### Samples
+
+| Prompt | A | B |
+|---|---|---|
+| Missed it | green climbing. | . |
+| Song starting | . | now. |
+| Streak going | . | . |
+| That's a wrap | . | for the chart done. |
+| On time | . | . |
+
 ## License
 
 This write-up: **CC-BY-SA-4.0**. TinyStories excerpt: **CDLA-Sharing-1.0**. [LICENSING.md](../../../LICENSING.md).

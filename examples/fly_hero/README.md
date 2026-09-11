@@ -11,7 +11,10 @@ Wires Fly Cast to [Fly Hero](https://github.com/actuallyrizzn/fly-hero) / Clone 
 | `fixtures/fly_lexicon.tsv` | Weighted mouth phrases |
 | `fixtures/events_midtempo.jsonl` | Midtempo session for offline replay |
 | `fixtures/chat_social.tsv` | Fake CHAT/SOCIAL lines |
+| `fixtures/reaction_train.txt` | Free-write climb train corpus |
+| `fixtures/reaction_heldout.txt` | Free-write climb held-out |
 | `docs/RESULTS.md` | Level A/B honesty numbers |
+| `docs/FREEWRITE-CLIMB.md` | Free-write climb path + gate |
 
 ## Run
 
