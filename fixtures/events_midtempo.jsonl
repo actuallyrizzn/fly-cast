@@ -1,0 +1,9 @@
+{"t": 0.0, "cue": "SONG_START", "song": "Fly Hero Midtempo", "track": "EasySingle"}
+{"t": 1.2, "cue": "HIT", "detail": "LANE_G"}
+{"t": 1.2, "cue": "LANE_G"}
+{"t": 2.5, "cue": "HIT", "detail": "STRUM"}
+{"t": 4.0, "cue": "HIT", "detail": "LANE_R"}
+{"t": 8.0, "cue": "MISS", "detail": "approx"}
+{"t": 12.0, "cue": "STREAK", "detail": "8"}
+{"t": 46.0, "cue": "SONG_END"}
+{"t": 46.5, "cue": "SCORE", "hits": 33, "notes": 39, "score": 12000, "max_streak": 18, "accuracy": 0.846, "detail": "85%"}
