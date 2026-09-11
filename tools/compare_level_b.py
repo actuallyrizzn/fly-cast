@@ -24,7 +24,7 @@ def _lines(path: Path) -> list[str]:
 
 def main() -> int:
     train_lines = _lines(ROOT / "fixtures" / "tinystories_subset.txt")[:30]
-    held = _lines(ROOT / "fixtures" / "reaction_heldout.txt")
+    held = _lines(ROOT / "examples" / "fly_hero" / "fixtures" / "reaction_heldout.txt")
     # Include held text in vocab so CE is defined; train excludes held lines.
     tok = Tokenizer.build(train_lines + held, max_vocab=800)
 

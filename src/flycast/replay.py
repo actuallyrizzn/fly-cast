@@ -6,10 +6,9 @@ from pathlib import Path
 
 from flycast.bank import load_bank
 from flycast.guard import Guard
+from flycast.profile import Profile, default_profile
 from flycast.react import demo_brain, react
 from flycast.senses import load_events
-
-DEFAULT_BANK = Path(__file__).resolve().parent.parent.parent / "fixtures" / "reply_bank.tsv"
 
 
 def replay(
@@ -17,30 +16,22 @@ def replay(
     *,
     bank_path: Path | None = None,
     guard: Guard | None = None,
+    profile: Profile | None = None,
 ) -> list[str]:
+    profile = profile or default_profile()
     events = load_events(events_path)
     if not events:
         return ["(no events — mouth idle)"]
     brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
+    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     lines: list[str] = []
-    interesting = {
-        "MISS",
-        "STREAK",
-        "OVERSTRUM",
-        "SONG_START",
-        "SONG_END",
-        "SCORE",
-        "CHAT",
-        "SOCIAL",
-    }
     window = []
     for ev in events:
         window.append(ev.as_prompt_event())
         window = window[-6:]
-        if ev.cue not in interesting and not (ev.cue == "HIT" and ev.detail == "STRUM"):
+        if not profile.should_react(ev.cue, ev.detail):
             continue
-        result = react(brain, tok, window, bank=bank)
+        result = react(brain, tok, window, bank=bank, profile=profile)
         detail = f" {ev.detail}" if ev.detail else ""
         cues = f"{ev.cue}{detail}".strip()
         if guard is not None:

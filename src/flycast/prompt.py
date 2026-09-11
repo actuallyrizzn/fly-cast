@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-CUES = frozenset(
+# Minimal built-in set for unit tests when no profile is loaded.
+DEFAULT_CUES = frozenset(
     {
         "HIT",
         "MISS",
@@ -16,11 +17,8 @@ CUES = frozenset(
         "SCORE",
         "CHAT",
         "SOCIAL",
-        "LANE_G",
-        "LANE_R",
-        "LANE_Y",
-        "LANE_B",
-        "LANE_O",
+        "EVENT",
+        "NOTE",
     }
 )
 
@@ -40,20 +38,30 @@ def normalize_cue(cue: str) -> str:
     return text
 
 
-def build_prompt(events: list[Event], *, message: str = "") -> tuple[str, str]:
+def build_prompt(
+    events: list[Event],
+    *,
+    message: str = "",
+    known_cues: frozenset[str] | None = None,
+) -> tuple[str, str]:
     """Return (prompt_text, primary_cue) for picker/generate.
 
     primary_cue is the latest event cue (for bank lookup).
+    Unknown cues are kept as-normalized so product profiles can extend freely.
     """
     if not events and not message:
         raise ValueError("need events or message")
+    known = known_cues if known_cues is not None else DEFAULT_CUES
     parts: list[str] = []
     primary = "CHAT" if message and not events else ""
     for ev in events[-8:]:
         cue = normalize_cue(ev.cue)
-        if cue not in CUES and not cue.startswith("STREAK") and not cue.startswith("SCORE"):
-            cue = "HIT" if cue == "NOTE" else cue
-        primary = cue if cue in CUES else primary or "HIT"
+        if cue == "NOTE":
+            cue = "HIT"
+        if known and cue not in known and not cue.startswith("STREAK") and not cue.startswith("SCORE"):
+            # Still emit the cue text; bank may fall back to HIT.
+            pass
+        primary = cue
         chunk = cue if not ev.detail else f"{cue} {ev.detail}"
         parts.append(chunk)
     if message:

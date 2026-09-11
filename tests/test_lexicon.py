@@ -7,14 +7,16 @@ from pathlib import Path
 from flycast.brain import build_fly_brain
 from flycast.lexicon import lexicon_bonus, load_lexicon
 from flycast.picker import pick, score_candidate
+from flycast.profile import load_profile
 from flycast.tokenizer import Tokenizer
 from flycast.train import train_fly_level_a
 
 ROOT = Path(__file__).resolve().parents[1]
+LEXICON = load_profile(ROOT / "examples" / "fly_hero").lexicon_path
 
 
 def test_load_lexicon():
-    lex = load_lexicon(ROOT / "fixtures" / "fly_lexicon.tsv")
+    lex = load_lexicon(LEXICON)
     assert lex["missed it"] >= 2.0
     assert lex["on time"] >= 2.0
     assert "buzz" not in lex  # no insect cosplay seed

@@ -1,0 +1,35 @@
+# Fly Hero / Clone Hero mouth — product profile
+name = "fly_hero"
+description = "Gameplay reactions for Fly Hero (Clone Hero). Not insect cosplay."
+
+[paths]
+# Paths are relative to this profile directory.
+bank = "fixtures/reply_bank.tsv"
+lexicon = "fixtures/fly_lexicon.tsv"
+events_demo = "fixtures/events_midtempo.jsonl"
+
+[cues]
+# Cues the prompt/bank understand for this product.
+known = [
+  "HIT", "MISS", "STREAK", "OVERSTRUM",
+  "SONG_START", "SONG_END", "SCORE",
+  "CHAT", "SOCIAL",
+  "LANE_G", "LANE_R", "LANE_Y", "LANE_B", "LANE_O",
+]
+
+# Cues that should trigger a mouth line during live/replay.
+interesting = [
+  "MISS", "STREAK", "OVERSTRUM",
+  "SONG_START", "SONG_END", "SCORE",
+  "CHAT", "SOCIAL",
+]
+
+# Also react when cue=HIT and detail matches (Clone Hero strum).
+hit_react_detail = "STRUM"
+
+# Optional: cues that must have ≥3 bank lines (LANE_* are prompt-only).
+# If omitted, every known cue except LANE_* is required.
+# bank_required = ["HIT", "MISS", ...]
+
+[picker]
+lexicon_scale = 0.85

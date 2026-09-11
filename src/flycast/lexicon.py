@@ -1,15 +1,16 @@
-"""Weighted fly lexicon — preferred mouth phrases (not insect cosplay)."""
+"""Weighted lexicon — preferred mouth phrases for the active profile."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-DEFAULT_LEXICON = Path(__file__).resolve().parent.parent.parent / "fixtures" / "fly_lexicon.tsv"
-
 
 def load_lexicon(path: Path | None = None) -> dict[str, float]:
     """Load `phrase <tab> weight` rows. Phrases stored lowercased."""
-    path = path or DEFAULT_LEXICON
+    if path is None:
+        from flycast.profile import default_profile
+
+        path = default_profile().lexicon_path
     out: dict[str, float] = {}
     if not path.is_file():
         return out
@@ -33,10 +34,8 @@ def lexicon_bonus(text: str, lexicon: dict[str, float]) -> float:
         return 0.0
     low = text.casefold()
     total = 0.0
-    # Longer phrases first so "missed it" beats "missed" if both listed
     for phrase, weight in sorted(lexicon.items(), key=lambda kv: len(kv[0]), reverse=True):
         if phrase and phrase in low:
             total += weight
-            # consume once per phrase key
             low = low.replace(phrase, " ", 1)
     return total

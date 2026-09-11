@@ -30,7 +30,7 @@ Checkpoint: `checkpoints/level_a/` (local; not in git).
 ## Level B — train input embeds + readout (W frozen)
 
 - **Date:** 2026-09-11
-- **Method:** start from Level A ridge readout; SGD on embed + readout (wiring layout frozen). Held-out: `fixtures/reaction_heldout.txt`. Train: TinyStories subset head. Script: `tools/compare_level_b.py`.
+- **Method:** start from Level A ridge readout; SGD on embed + readout (wiring layout frozen). Held-out: `examples/fly_hero/fixtures/reaction_heldout.txt`. Train: `fixtures/tinystories_subset.txt` head. Script: `tools/compare_level_b.py`.
 
 | Control | Held-out reaction CE |
 |---|---|

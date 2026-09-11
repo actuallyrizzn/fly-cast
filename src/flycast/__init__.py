@@ -1,4 +1,9 @@
-"""Fly Cast — text in / English out on the Fly Hero larva connectome."""
+"""Fly Cast — connectome mouth (text in / English out).
+
+Product-specific cue banks and demos live under ``examples/`` (see
+``examples/fly_hero/``). Load a profile via ``FLYCAST_PROFILE`` or
+``flycast --profile``.
+"""
 
 from __future__ import annotations
 

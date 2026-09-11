@@ -10,13 +10,14 @@ from flycast.live import run_follow, run_once
 from flycast.overlay import read_state
 
 ROOT = Path(__file__).resolve().parents[1]
+EVENTS = ROOT / "examples" / "fly_hero" / "fixtures" / "events_midtempo.jsonl"
 
 
 def test_run_once_updates_overlay(tmp_path: Path):
     state = tmp_path / "state.json"
     log = tmp_path / "lines.jsonl"
     lines = run_once(
-        ROOT / "fixtures" / "events_midtempo.jsonl",
+        EVENTS,
         state_path=state,
         stop_path=tmp_path / "STOP",
         line_log=log,
@@ -57,7 +58,7 @@ def test_cli_live_once(tmp_path: Path):
         main(
             [
                 "live",
-                str(ROOT / "fixtures" / "events_midtempo.jsonl"),
+                str(EVENTS),
                 "--state-path",
                 str(state),
                 "--stop-path",
@@ -76,7 +77,7 @@ def test_run_once_kill_switch(tmp_path: Path):
     stop.write_text("1\n", encoding="utf-8")
     state = tmp_path / "state.json"
     lines = run_once(
-        ROOT / "fixtures" / "events_midtempo.jsonl",
+        EVENTS,
         state_path=state,
         stop_path=stop,
     )

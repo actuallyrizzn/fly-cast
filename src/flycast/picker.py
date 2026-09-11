@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from flycast.brain import FlyBrain
-from flycast.lexicon import lexicon_bonus, load_lexicon
+from flycast.lexicon import lexicon_bonus
 from flycast.tokenizer import EOS, Tokenizer
 
 
@@ -62,6 +62,8 @@ def pick(
     if not candidates:
         raise ValueError("candidates must not be empty")
     if use_lexicon and lexicon is None:
+        from flycast.lexicon import load_lexicon
+
         lexicon = load_lexicon()
     if not use_lexicon:
         lexicon = None

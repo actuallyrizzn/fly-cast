@@ -22,18 +22,12 @@ def load_bank(path: Path) -> dict[str, list[str]]:
     return bank
 
 
-REQUIRED_CUES = (
-    "HIT",
-    "MISS",
-    "STREAK",
-    "OVERSTRUM",
-    "SONG_START",
-    "SONG_END",
-    "SCORE",
-)
-
-
-def validate_bank(bank: dict[str, list[str]], *, min_per_cue: int = 3) -> None:
-    missing = [c for c in REQUIRED_CUES if len(bank.get(c, [])) < min_per_cue]
+def validate_bank(
+    bank: dict[str, list[str]],
+    *,
+    required_cues: tuple[str, ...] | list[str] | frozenset[str],
+    min_per_cue: int = 3,
+) -> None:
+    missing = [c for c in required_cues if len(bank.get(c, [])) < min_per_cue]
     if missing:
         raise ValueError(f"bank missing ≥{min_per_cue} lines for: {missing}")

@@ -1,6 +1,7 @@
 """Chat / social stub path — fixtures only, no platform accounts.
 
 Future public posting must set approve_mode=True and wait for a human.
+Product cue names (CHAT/SOCIAL) come from the active profile's bank.
 """
 
 from __future__ import annotations
@@ -8,16 +9,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from flycast.bank import load_bank
 from flycast.guard import Guard
+from flycast.profile import default_profile
 from flycast.prompt import Event, build_prompt
 from flycast.react import demo_brain, react
-from flycast.bank import load_bank
-from flycast.replay import DEFAULT_BANK
 
 
 @dataclass(frozen=True)
 class ExternalReply:
-    cue: str  # CHAT | SOCIAL
+    cue: str
     text: str
     mode: str
     allowed: bool
@@ -35,16 +36,18 @@ def reply_to_message(
 ) -> ExternalReply:
     """Build prompt + pick a bank reply + run guard. Never posts anywhere."""
     cue_u = cue.strip().upper()
-    if cue_u not in {"CHAT", "SOCIAL"}:
-        raise ValueError("cue must be CHAT or SOCIAL")
+    profile = default_profile()
+    if profile.known_cues and cue_u not in profile.known_cues:
+        raise ValueError(f"cue not in profile known set: {cue_u}")
     brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
+    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     events = [Event(cue_u, message[:80])]
-    prompt, primary = build_prompt(events, message=message if cue_u == "CHAT" else "")
-    if cue_u == "SOCIAL" and primary != "SOCIAL":
-        primary = "SOCIAL"
-    _ = prompt  # reserved for free-write later
-    result = react(brain, tok, events, bank=bank)
+    _prompt, _primary = build_prompt(
+        events,
+        message=message if cue_u == "CHAT" else "",
+        known_cues=profile.known_cues or None,
+    )
+    result = react(brain, tok, events, bank=bank, profile=profile)
     g = (guard or Guard(stop_path=Path("/tmp/flycast-no-stop"))).check(
         result.text,
         cues=f"{cue_u} {message[:40]}",

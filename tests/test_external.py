@@ -9,6 +9,7 @@ from flycast.guard import Guard
 from flycast.prompt import Event, build_prompt
 
 ROOT = Path(__file__).resolve().parents[1]
+CHAT = ROOT / "examples" / "fly_hero" / "fixtures" / "chat_social.tsv"
 
 
 def test_build_prompt_chat_message():
@@ -18,7 +19,7 @@ def test_build_prompt_chat_message():
 
 
 def test_chat_fixture_guarded(tmp_path: Path):
-    rows = load_chat_fixture(ROOT / "fixtures" / "chat_social.tsv")
+    rows = load_chat_fixture(CHAT)
     assert any(c == "CHAT" for c, _ in rows)
     assert any(c == "SOCIAL" for c, _ in rows)
     g = Guard(stop_path=tmp_path / "STOP", log_path=tmp_path / "log.jsonl")

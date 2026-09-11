@@ -7,6 +7,8 @@ from pathlib import Path
 from flycast.cli import main
 
 ROOT = Path(__file__).resolve().parents[1]
+EVENTS = ROOT / "examples" / "fly_hero" / "fixtures" / "events_midtempo.jsonl"
+PROFILE = ROOT / "examples" / "fly_hero"
 
 
 def test_say_exits_zero():
@@ -18,7 +20,7 @@ def test_pick_cli():
 
 
 def test_replay_cli():
-    assert main(["replay", str(ROOT / "fixtures" / "events_midtempo.jsonl")]) == 0
+    assert main(["--profile", str(PROFILE), "replay", str(EVENTS)]) == 0
 
 
 def test_guard_cli_ok(tmp_path: Path):
@@ -57,8 +59,10 @@ def test_replay_with_guard(tmp_path: Path):
     assert (
         main(
             [
+                "--profile",
+                str(PROFILE),
                 "replay",
-                str(ROOT / "fixtures" / "events_midtempo.jsonl"),
+                str(EVENTS),
                 "--guard",
                 "--stop-path",
                 str(tmp_path / "STOP"),

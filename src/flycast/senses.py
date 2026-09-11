@@ -1,4 +1,8 @@
-"""Parse Fly Hero events.jsonl for the mouth."""
+"""Parse events.jsonl for the mouth (generic schema).
+
+Each line is JSON: ``{"t": <float>, "cue": "<NAME>", "detail": "<optional>"}``.
+Product profiles decide which cues are interesting; this module only parses.
+"""
 
 from __future__ import annotations
 

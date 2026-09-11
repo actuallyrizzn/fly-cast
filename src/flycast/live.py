@@ -8,30 +8,9 @@ from pathlib import Path
 from flycast.bank import load_bank
 from flycast.guard import Guard
 from flycast.overlay import OverlayState, default_state_path, write_state
+from flycast.profile import Profile, default_profile
 from flycast.react import demo_brain, react
-from flycast.replay import DEFAULT_BANK
 from flycast.senses import LoggedEvent, follow_events, load_events
-
-INTERESTING = {
-    "MISS",
-    "STREAK",
-    "OVERSTRUM",
-    "SONG_START",
-    "SONG_END",
-    "SCORE",
-    "CHAT",
-    "SOCIAL",
-}
-
-
-def _should_react(ev: LoggedEvent, *, last_hit_t: float, hit_min_interval_s: float) -> bool:
-    if ev.cue in INTERESTING:
-        return True
-    if ev.cue == "HIT" and ev.detail == "STRUM":
-        if hit_min_interval_s <= 0:
-            return True
-        return (ev.t - last_hit_t) >= hit_min_interval_s or last_hit_t <= 0
-    return False
 
 
 def process_event(
@@ -43,16 +22,26 @@ def process_event(
     bank,
     guard: Guard,
     state_path: Path,
+    profile: Profile,
     last_hit_t: float = 0.0,
     hit_min_interval_s: float = 5.0,
 ) -> tuple[str | None, float]:
     window.append(ev.as_prompt_event())
     del window[:-6]
-    if not _should_react(ev, last_hit_t=last_hit_t, hit_min_interval_s=hit_min_interval_s):
+    if not profile.should_react(ev.cue, ev.detail):
         return None, last_hit_t
+    cue_u = ev.cue.strip().upper()
+    if (
+        cue_u == "HIT"
+        and hit_min_interval_s > 0
+        and last_hit_t > 0
+        and (ev.t - last_hit_t) < hit_min_interval_s
+    ):
+        return None, last_hit_t
+
     detail = f" {ev.detail}" if ev.detail else ""
     cues = f"{ev.cue}{detail}".strip()
-    result = react(brain, tok, window, bank=bank)
+    result = react(brain, tok, window, bank=bank, profile=profile)
     g = guard.check(
         result.text,
         cues=cues,
@@ -60,9 +49,7 @@ def process_event(
         destination="overlay",
         now=float(ev.t) if ev.t else None,
     )
-    new_hit_t = last_hit_t
-    if ev.cue == "HIT":
-        new_hit_t = ev.t
+    new_hit_t = float(ev.t) if cue_u == "HIT" else last_hit_t
     if not g.allowed:
         write_state(
             state_path,
@@ -83,13 +70,15 @@ def run_once(
     state_path: Path | None = None,
     stop_path: Path | None = None,
     line_log: Path | None = None,
+    profile: Profile | None = None,
 ) -> list[str]:
     """Replay existing events into overlay (no follow)."""
+    profile = profile or default_profile()
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
     guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
     brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
+    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     window: list = []
     lines: list[str] = []
     write_state(
@@ -109,6 +98,7 @@ def run_once(
             bank=bank,
             guard=guard,
             state_path=state_path,
+            profile=profile,
             last_hit_t=last_hit_t,
         )
         if out:
@@ -126,13 +116,15 @@ def run_follow(
     max_seconds: float | None = None,
     print_lines: bool = True,
     from_start: bool = False,
+    profile: Profile | None = None,
 ) -> list[str]:
     """Tail events file and update overlay until max_seconds elapses."""
+    profile = profile or default_profile()
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
     guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
     brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
+    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     window: list = []
     lines: list[str] = []
     write_state(
@@ -159,6 +151,7 @@ def run_follow(
             bank=bank,
             guard=guard,
             state_path=state_path,
+            profile=profile,
             last_hit_t=last_hit_t,
         )
         if out:

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "flycast"
 version = "0.1.0"
-description = "Same fly wiring as Fly Hero — text in, English out. Mouth for the Clone Hero streamer (offline first)."
+description = "Connectome mouth: larva wiring → text in, English out. Core library + product profiles under examples/."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

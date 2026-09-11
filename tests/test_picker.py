@@ -6,20 +6,22 @@ from pathlib import Path
 
 import pytest
 
-from flycast.bank import REQUIRED_CUES, load_bank, validate_bank
+from flycast.bank import load_bank, validate_bank
 from flycast.brain import build_fly_brain
 from flycast.picker import pick, score_candidate
+from flycast.profile import load_profile
 from flycast.tokenizer import Tokenizer
 from flycast.train import train_fly_level_a
 
 ROOT = Path(__file__).resolve().parents[1]
-BANK = ROOT / "fixtures" / "reply_bank.tsv"
+PROFILE = load_profile(ROOT / "examples" / "fly_hero")
+BANK = PROFILE.bank_path
 
 
 def test_bank_has_required_cues():
     bank = load_bank(BANK)
-    validate_bank(bank, min_per_cue=3)
-    for cue in REQUIRED_CUES:
+    validate_bank(bank, required_cues=PROFILE.bank_required_cues, min_per_cue=3)
+    for cue in PROFILE.bank_required_cues:
         assert len(bank[cue]) >= 3
 
 

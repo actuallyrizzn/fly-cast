@@ -7,7 +7,7 @@ from pathlib import Path
 from flycast.senses import load_events, parse_line
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURE = ROOT / "fixtures" / "events_midtempo.jsonl"
+FIXTURE = ROOT / "examples" / "fly_hero" / "fixtures" / "events_midtempo.jsonl"
 
 
 def test_load_fixture():

@@ -1,19 +1,38 @@
 # Fly Cast
 
-Same larval fly-brain wiring as [Fly Hero](https://github.com/actuallyrizzn/fly-hero). This repo is the **mouth**: text in → English out. Fly Hero stays the hands that play Clone Hero.
+A small **connectome mouth**: activity through the published Drosophila larva wiring → text in → English out.
+
+Same larval connectome lineage as [Fly Hero](https://github.com/actuallyrizzn/fly-hero). This library is the mouth; product-specific banks, cues, and demos live under `examples/`.
+
+Layout mirrors [sanctumos/thalamus](https://github.com/sanctumos/thalamus): reusable core + forked examples.
 
 ## What this is
 
-- A small program that runs activity through the published larva connectome and learns a thin translator so words can come out.
-- Aimed at reacting to gameplay (hits, misses, streaks) and later chat/social — **as good as we can get**. Weird or dumb English is still a pass.
-- Built and gated on the DSC Tasks board (Fly Hero → list **Fly Cast**). Feasibility: [Doc #1324](https://tasks.decisionsciencecorp.com/admin/doc.php?id=1324).
+- A Python package (`flycast`) that runs sparse steps on the Winding 2023 larva connectome and learns a thin translator so words can come out.
+- A **profile** system (`profile.toml`) so anyone can point the same core at a different cue vocabulary, reply bank, and lexicon.
+- A flagship example — **Fly Hero / Clone Hero gameplay reactions** — under `examples/fly_hero/`.
+
+Weird or dumb English is still a pass. Honesty tables (real wiring vs scrambled vs no-fly) stay mandatory for training claims.
 
 ## What this is not
 
 - Not ChatGPT.
-- Not Sanctum Tectum / Broca.
-- Not a public Twitch bot yet (stream, accounts, and music policy are deferred).
-- Not “we taught a fly English” without an honesty table (real wiring vs scrambled vs no-fly).
+- Not insect cosplay / “we taught a fly English” without controls.
+- Not a public Twitch bot by default (stream, accounts, and music policy are product choices — out of the core).
+
+## Repository layout
+
+```
+fly-cast/
+├── src/flycast/          # Core library (connectome, train, pick, guard, overlay, CLI)
+├── examples/
+│   └── fly_hero/         # Flagship product profile (Clone Hero / Fly Hero)
+│       ├── profile.toml
+│       ├── fixtures/     # reply bank, lexicon, recorded events
+│       └── docs/         # our honesty / Level A–B notes
+├── fixtures/             # Generic practice / TinyStories subset (no product cues)
+└── tests/
+```
 
 ## Install
 
@@ -24,34 +43,47 @@ pip install -e ".[dev]"
 pytest
 ```
 
-On the ngram laptop: `~/fly-cast` (separate from `~/fly-hero`).
-
-## Quick try
+## Quick try (flagship example)
 
 ```bash
+# Default profile is examples/fly_hero when FLYCAST_PROFILE is unset
 flycast say "hello there"
-flycast replay fixtures/events_midtempo.jsonl
-flycast live fixtures/events_midtempo.jsonl --state-path ~/fly-cast/overlay_state.json
+flycast replay examples/fly_hero/fixtures/events_midtempo.jsonl
+flycast live examples/fly_hero/fixtures/events_midtempo.jsonl --state-path /tmp/flycast-state.json
 flycast overlay serve   # http://127.0.0.1:8766/
 ```
 
-Untrained free-write is weak; **live default is picker** from `fixtures/reply_bank.tsv`.
+Untrained free-write is weak; **live default is the picker** from the profile’s reply bank (+ optional lexicon).
 
-## How chat will plug in later
+## Fork for your own domain
 
-Gameplay already emits `CHAT` / `SOCIAL` cues into the same event file + guard path (`flycast.external.reply_to_message`). Fixture: `fixtures/chat_social.tsv`.
+1. Copy `examples/fly_hero/` → `examples/your_thing/`.
+2. Edit `profile.toml` (cue lists, interesting events, paths).
+3. Replace `fixtures/reply_bank.tsv` and optionally `fixtures/fly_lexicon.tsv`.
+4. Point the CLI at your profile:
 
-Later, a platform adapter (Twitch / Discord / something else — **Mark picks**) would:
+```bash
+export FLYCAST_PROFILE=examples/your_thing
+# or: flycast --profile examples/your_thing replay path/to/events.jsonl
+```
 
-1. Append `{cue: CHAT|SOCIAL, detail: message}` to the events JSONL (or call `reply_to_message` directly).
-2. Run the reply through the **guard** (URLs stripped, blocklist, kill switch, line log).
-3. Keep **`approve_mode=True`** for any public outbound post until Mark turns that off for a named platform.
+Leave `src/flycast/` alone unless you are changing the shared mouth.
 
-This repo does **not** register bot accounts or choose a stream host.
+Events JSONL schema (generic):
+
+```json
+{"t": 1.0, "cue": "YOUR_CUE", "detail": "optional"}
+```
+
+## Chat / social plug-in shape
+
+Profiles can declare cues like `CHAT` / `SOCIAL`. The same guard path applies (`flycast.external.reply_to_message`). Keep **`approve_mode=True`** for any public outbound post until a human turns that off for a named platform.
+
+This repo does not register bot accounts or choose a stream host.
 
 ## Data
 
-Larva connectome (Winding 2023) under `src/flycast/data/` — see that folder’s README. Same files Fly Hero ships.
+Larva connectome (Winding 2023) under `src/flycast/data/` — see that folder’s README.
 
 ## License
 

@@ -1,8 +1,9 @@
-"""CLI: flycast say / flycast overfit."""
+"""CLI: flycast say / overfit / pick / replay / guard / overlay / live."""
 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -13,7 +14,16 @@ from flycast.train import overfit_practice
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="flycast", description="Fly Cast — text mouth on fly wiring")
+    parser = argparse.ArgumentParser(
+        prog="flycast",
+        description="Fly Cast — connectome mouth (text in → English out)",
+    )
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        default=None,
+        help="Product profile directory or profile.toml (default: FLYCAST_PROFILE or examples/fly_hero)",
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     say = sub.add_parser("say", help="Generate a continuation (untrained until you fit a model)")
@@ -73,6 +83,9 @@ def main(argv: list[str] | None = None) -> int:
     lv.add_argument("--seconds", type=float, default=None, help="Max seconds when --follow")
 
     args = parser.parse_args(argv)
+    if args.profile is not None:
+        os.environ["FLYCAST_PROFILE"] = str(args.profile.resolve())
+
     if args.cmd == "say":
         prompt = " ".join(args.prompt)
         # Minimal vocab from prompt alone so CLI works before training artifacts exist.
