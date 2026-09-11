@@ -43,6 +43,34 @@ def _nll(logits: np.ndarray, target: int) -> float:
     return float(-np.log(p[target] + 1e-12))
 
 
+def _collect_fly_examples(
+    brain: FlyBrain,
+    tokenizer: Tokenizer,
+    lines: list[str],
+    *,
+    max_pairs: int | None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """One forward pass per line. Returns states (N, n) and target ids (N,)."""
+    bos = tokenizer.token_to_id[BOS]
+    eos = tokenizer.token_to_id[EOS]
+    states: list[np.ndarray] = []
+    targets: list[int] = []
+    for line in lines:
+        ids = [bos] + tokenizer.encode(line) + [eos]
+        if len(ids) < 2:
+            continue
+        brain.reset()
+        for i in range(len(ids) - 1):
+            brain.inject_token(ids[i])
+            states.append(brain.state)
+            targets.append(ids[i + 1])
+            if max_pairs is not None and len(states) >= max_pairs:
+                return np.stack(states), np.asarray(targets, dtype=np.int64)
+    if not states:
+        raise ValueError("no training pairs")
+    return np.stack(states), np.asarray(targets, dtype=np.int64)
+
+
 def train_fly_level_a(
     brain: FlyBrain,
     tokenizer: Tokenizer,
@@ -54,45 +82,28 @@ def train_fly_level_a(
 ) -> TrainResult:
     """Fit readout by ridge regression (dual form). Embeddings and ``W`` stay fixed."""
     del seed
-    pairs = _pairs(tokenizer, lines, max_pairs=max_pairs)
-    if not pairs:
-        raise ValueError("no training pairs")
-    states: list[np.ndarray] = []
-    targets: list[int] = []
-    for ctx, target in pairs:
-        brain.reset()
-        for tid in ctx:
-            brain.inject_token(tid)
-        states.append(brain.state)
-        targets.append(target)
-    x = np.stack(states, axis=0).astype(np.float64)  # (N, n)
+    states, targets = _collect_fly_examples(brain, tokenizer, lines, max_pairs=max_pairs)
+    x = states.astype(np.float64)
     x = np.concatenate([x, np.ones((x.shape[0], 1), dtype=np.float64)], axis=1)
     y = np.zeros((len(targets), brain.vocab_size), dtype=np.float64)
     for i, t in enumerate(targets):
         y[i, t] = 1.0
-    # Dual ridge: W = X.T (X X.T + λI)^{-1} Y  — cheap when N << n
     gram = x @ x.T
     gram += ridge * np.eye(gram.shape[0])
     alpha = np.linalg.solve(gram, y)
-    w = x.T @ alpha  # (n+1, vocab)
-    brain.readout = w[:-1].astype(np.float32)
-    brain._logit_bias = w[-1].astype(np.float32)  # type: ignore[attr-defined]
+    w = x.T @ alpha
+    base_w = w[:-1].astype(np.float32)
+    base_b = w[-1].astype(np.float32)
 
-    # MSE-ridge logits are under-confident for CE; pick a gain that minimizes NLL.
     best_loss = float("inf")
     best_gain = 1.0
-    base_w = brain.readout.copy()
-    base_b = brain._logit_bias.copy()
+    # Evaluate CE on stored states — no second reservoir pass.
     for gain in (1.0, 2.0, 5.0, 10.0, 15.0, 20.0):
-        brain.readout = (base_w * gain).astype(np.float32)
-        brain._logit_bias = (base_b * gain).astype(np.float32)
+        logits = (states.astype(np.float64) @ (base_w * gain).astype(np.float64)) + (base_b * gain)
         total = 0.0
-        for ctx, target in pairs:
-            brain.reset()
-            for tid in ctx:
-                brain.inject_token(tid)
-            total += _nll(brain.logits(), target)
-        avg = total / len(pairs)
+        for i, target in enumerate(targets):
+            total += _nll(logits[i], int(target))
+        avg = total / len(targets)
         if avg < best_loss:
             best_loss = avg
             best_gain = gain
