@@ -99,9 +99,10 @@ def train_no_fly(
     *,
     ridge: float = 1e-2,
     seed: int = 0,
+    max_pairs: int | None = 800,
 ) -> TrainResult:
     del seed
-    pairs = _pairs(tokenizer, lines)
+    pairs = _pairs(tokenizer, lines, max_pairs=max_pairs)
     if not pairs:
         raise ValueError("no training pairs")
     feats = np.stack([pred.features(ctx) for ctx, _ in pairs], axis=0).astype(np.float64)
