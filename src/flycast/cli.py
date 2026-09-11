@@ -63,6 +63,15 @@ def main(argv: list[str] | None = None) -> int:
     ov_srv.add_argument("--port", type=int, default=8766)
     ov_srv.add_argument("--once", action="store_true", help="Start and print URL then exit (tests)")
 
+    lv = sub.add_parser("live", help="Follow events.jsonl → guard → overlay state")
+    lv.add_argument("events", type=Path)
+    lv.add_argument("--bank", type=Path, default=None)
+    lv.add_argument("--state-path", type=Path, default=None)
+    lv.add_argument("--stop-path", type=Path, default=None)
+    lv.add_argument("--line-log", type=Path, default=None)
+    lv.add_argument("--follow", action="store_true", help="Tail the file (default: one-shot)")
+    lv.add_argument("--seconds", type=float, default=None, help="Max seconds when --follow")
+
     args = parser.parse_args(argv)
     if args.cmd == "say":
         prompt = " ".join(args.prompt)
@@ -148,6 +157,29 @@ def main(argv: list[str] | None = None) -> int:
             finally:
                 srv.stop()
             return 0
+    if args.cmd == "live":
+        from flycast.live import run_follow, run_once
+
+        stop = args.stop_path or (Path.home() / "fly-cast" / "STOP")
+        if args.follow:
+            run_follow(
+                args.events,
+                bank_path=args.bank,
+                state_path=args.state_path,
+                stop_path=stop,
+                line_log=args.line_log,
+                max_seconds=args.seconds,
+            )
+        else:
+            for line in run_once(
+                args.events,
+                bank_path=args.bank,
+                state_path=args.state_path,
+                stop_path=stop,
+                line_log=args.line_log,
+            ):
+                print(line)
+        return 0
     return 2
 
 

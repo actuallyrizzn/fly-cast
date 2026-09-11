@@ -44,13 +44,17 @@ def load_events(path: Path) -> list[LoggedEvent]:
     return out
 
 
-def follow_events(path: Path, *, idle_sleep: float = 0.05):
-    """Yield new events as they are appended. Idle forever if file missing."""
+def follow_events(path: Path, *, idle_sleep: float = 0.05, from_start: bool = False):
+    """Yield new events as they are appended. Idle forever if file missing.
+
+    By default seeks to EOF (live session). Pass from_start=True to read existing lines first.
+    """
     while not path.is_file():
         yield None  # caller can show hands-offline / waiting
         time.sleep(max(idle_sleep, 0.2))
     with path.open("r", encoding="utf-8") as handle:
-        handle.seek(0, 2)
+        if not from_start:
+            handle.seek(0, 2)
         while True:
             line = handle.readline()
             if not line:
