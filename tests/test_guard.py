@@ -58,12 +58,19 @@ def test_kill_switch(tmp_path: Path):
 
 
 def test_dedupe_recent(tmp_path: Path):
-    g = Guard(stop_path=tmp_path / "nope", recent_window=3)
-    assert g.check("Streak going.").allowed
-    r2 = g.check("Streak going.")
+    g = Guard(stop_path=tmp_path / "nope", recent_window=3, dedupe_ttl_s=0.0)
+    assert g.check("Streak going.", now=1.0).allowed
+    r2 = g.check("Streak going.", now=1.1)
     assert not r2.allowed
     assert r2.reason == "dedupe"
-    assert g.check("That's a wrap.").allowed
+    assert g.check("That's a wrap.", now=1.2).allowed
+
+
+def test_dedupe_ttl_expires(tmp_path: Path):
+    g = Guard(stop_path=tmp_path / "nope", dedupe_ttl_s=2.0)
+    assert g.check("On time.", now=10.0).allowed
+    assert not g.check("On time.", now=10.5).allowed
+    assert g.check("On time.", now=12.5).allowed
 
 
 def test_length_cap(tmp_path: Path):

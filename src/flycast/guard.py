@@ -54,11 +54,12 @@ class Guard:
     log_path: Path | None = None
     max_len: int = 120
     recent_window: int = 8
+    dedupe_ttl_s: float = 3.0
     min_interval_s: float = 0.0
     blocklist: tuple[str, ...] = DEFAULT_BLOCKLIST
     extra_blocklist: tuple[str, ...] = ()
 
-    _recent: list[str] = field(default_factory=list, init=False, repr=False)
+    _recent: list[tuple[str, float]] = field(default_factory=list, init=False, repr=False)
     _last_emit: float = field(default=0.0, init=False, repr=False)
 
     def _terms(self) -> tuple[str, ...]:
@@ -122,7 +123,7 @@ class Guard:
                 }
             )
             if allowed and filtered:
-                self._recent.append(filtered.casefold())
+                self._recent.append((filtered.casefold(), tnow))
                 self._recent = self._recent[-self.recent_window :]
                 self._last_emit = tnow
             return result
@@ -146,7 +147,12 @@ class Guard:
             return finish(False, "", hit)
 
         key = filtered.casefold()
-        if key in self._recent:
+        # Drop expired recent entries
+        if self.dedupe_ttl_s > 0:
+            self._recent = [(t, ts) for t, ts in self._recent if (tnow - ts) < self.dedupe_ttl_s]
+        else:
+            self._recent = self._recent[-self.recent_window :]
+        if any(t == key for t, _ in self._recent):
             return finish(False, "", "dedupe")
 
         if self.min_interval_s > 0 and self._last_emit > 0:

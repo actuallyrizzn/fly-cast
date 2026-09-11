@@ -24,8 +24,14 @@ INTERESTING = {
 }
 
 
-def _should_react(ev: LoggedEvent) -> bool:
-    return ev.cue in INTERESTING or (ev.cue == "HIT" and ev.detail == "STRUM")
+def _should_react(ev: LoggedEvent, *, last_hit_t: float, hit_min_interval_s: float) -> bool:
+    if ev.cue in INTERESTING:
+        return True
+    if ev.cue == "HIT" and ev.detail == "STRUM":
+        if hit_min_interval_s <= 0:
+            return True
+        return (ev.t - last_hit_t) >= hit_min_interval_s or last_hit_t <= 0
+    return False
 
 
 def process_event(
@@ -37,26 +43,37 @@ def process_event(
     bank,
     guard: Guard,
     state_path: Path,
-) -> str | None:
+    last_hit_t: float = 0.0,
+    hit_min_interval_s: float = 5.0,
+) -> tuple[str | None, float]:
     window.append(ev.as_prompt_event())
     del window[:-6]
-    if not _should_react(ev):
-        return None
+    if not _should_react(ev, last_hit_t=last_hit_t, hit_min_interval_s=hit_min_interval_s):
+        return None, last_hit_t
     detail = f" {ev.detail}" if ev.detail else ""
     cues = f"{ev.cue}{detail}".strip()
     result = react(brain, tok, window, bank=bank)
-    g = guard.check(result.text, cues=cues, mode=result.mode, destination="overlay")
+    g = guard.check(
+        result.text,
+        cues=cues,
+        mode=result.mode,
+        destination="overlay",
+        now=float(ev.t) if ev.t else None,
+    )
+    new_hit_t = last_hit_t
+    if ev.cue == "HIT":
+        new_hit_t = ev.t
     if not g.allowed:
         write_state(
             state_path,
             OverlayState(line="", mode="silent", status="silent", cues=cues),
         )
-        return f"{cues} → [silent] ({g.reason})"
+        return f"{cues} → [silent] ({g.reason})", new_hit_t
     write_state(
         state_path,
         OverlayState(line=g.filtered, mode=g.mode, status="live", cues=cues),
     )
-    return f"{cues} → [{g.mode}] {g.filtered}"
+    return f"{cues} → [{g.mode}] {g.filtered}", new_hit_t
 
 
 def run_once(
@@ -70,7 +87,7 @@ def run_once(
     """Replay existing events into overlay (no follow)."""
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
-    guard = Guard(stop_path=stop_path, log_path=line_log)
+    guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
     brain, tok = demo_brain()
     bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
     window: list = []
@@ -82,8 +99,9 @@ def run_once(
     events = load_events(events_path)
     if not events:
         return lines
+    last_hit_t = 0.0
     for ev in events:
-        out = process_event(
+        out, last_hit_t = process_event(
             ev,
             window=window,
             brain=brain,
@@ -91,6 +109,7 @@ def run_once(
             bank=bank,
             guard=guard,
             state_path=state_path,
+            last_hit_t=last_hit_t,
         )
         if out:
             lines.append(out)
@@ -111,7 +130,7 @@ def run_follow(
     """Tail events file and update overlay until max_seconds elapses."""
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
-    guard = Guard(stop_path=stop_path, log_path=line_log)
+    guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
     brain, tok = demo_brain()
     bank = load_bank(bank_path) if bank_path else load_bank(DEFAULT_BANK)
     window: list = []
@@ -121,6 +140,7 @@ def run_follow(
         OverlayState(line="", mode="silent", status="events-missing", cues=""),
     )
     started = time.time()
+    last_hit_t = 0.0
     for item in follow_events(events_path, from_start=from_start):
         if max_seconds is not None and (time.time() - started) >= max_seconds:
             break
@@ -131,7 +151,7 @@ def run_follow(
                     OverlayState(line="", mode="silent", status="events-missing", cues=""),
                 )
             continue
-        out = process_event(
+        out, last_hit_t = process_event(
             item,
             window=window,
             brain=brain,
@@ -139,6 +159,7 @@ def run_follow(
             bank=bank,
             guard=guard,
             state_path=state_path,
+            last_hit_t=last_hit_t,
         )
         if out:
             lines.append(out)

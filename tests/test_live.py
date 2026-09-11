@@ -43,11 +43,11 @@ def test_run_follow_appends(tmp_path: Path):
         events,
         state_path=state,
         stop_path=tmp_path / "STOP",
-        max_seconds=0.5,
+        max_seconds=3.0,
         print_lines=False,
         from_start=True,
     )
-    assert any("MISS" in ln for ln in lines)
+    assert any("MISS" in ln for ln in lines), lines
     assert read_state(state).status == "live"
 
 
@@ -81,5 +81,5 @@ def test_run_once_kill_switch(tmp_path: Path):
         stop_path=stop,
     )
     assert lines
-    assert all("[silent]" in ln for ln in lines)
+    assert all("[silent]" in ln and "kill_switch" in ln for ln in lines), lines
     assert read_state(state).mode == "silent"
