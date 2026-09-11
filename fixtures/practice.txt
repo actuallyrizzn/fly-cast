@@ -1,0 +1,7 @@
+# Tiny practice corpus for the harness overfit gate.
+the cat sat on the mat.
+the dog ran to the park.
+she said hello there friend.
+missed a note on green.
+hit streak of eight notes.
+song ended with a smile.
