@@ -21,11 +21,20 @@ def react(
     *,
     bank: dict[str, list[str]] | None = None,
     message: str = "",
+    lexicon: dict[str, float] | None = None,
+    use_lexicon: bool = True,
 ) -> PickResult:
     bank = bank or load_bank(DEFAULT_BANK)
     prompt, cue = build_prompt(events, message=message)
     candidates = bank.get(cue) or bank.get("HIT") or ["…"]
-    return pick(brain, tokenizer, prompt, candidates)
+    return pick(
+        brain,
+        tokenizer,
+        prompt,
+        candidates,
+        lexicon=lexicon,
+        use_lexicon=use_lexicon,
+    )
 
 
 def demo_brain() -> tuple[FlyBrain, Tokenizer]:

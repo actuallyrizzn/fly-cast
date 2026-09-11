@@ -5,21 +5,26 @@
 HIT	Nice catch.
 HIT	On time.
 HIT	Got it.
+HIT	Okay.
 MISS	Dropped that one.
 MISS	Missed it.
 MISS	That note got away.
+MISS	Oh well.
 STREAK	Streak going.
 STREAK	Keep it rolling.
 STREAK	Still hitting.
+STREAK	Cool.
 OVERSTRUM	Overstrum — ease up.
 OVERSTRUM	Too early there.
 OVERSTRUM	Wait for it next time.
 SONG_START	Song starting.
 SONG_START	Here we go.
 SONG_START	Highway's live.
+SONG_START	Alright.
 SONG_END	Song over.
 SONG_END	That's a wrap.
 SONG_END	Final chart done.
+SONG_END	Done.
 SCORE	Score is in.
 SCORE	Run finished.
 SCORE	Results are up.

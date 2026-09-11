@@ -1,0 +1,25 @@
+# Fly lexicon — preferred mouth phrases (gameplay English, not insect cosplay).
+# Format: phrase <tab> weight  (higher = more “this mouth”)
+# Used as a soft bonus when the picker ranks reply-bank candidates.
+
+missed it	3.0
+on time	3.0
+nice catch	2.5
+got it	2.0
+dropped that	2.5
+streak going	4.0
+keep it rolling	3.0
+still hitting	2.5
+that's a wrap	3.5
+song over	2.5
+song starting	4.0
+here we go	3.0
+highway	3.0
+run finished	2.0
+score is in	2.0
+ease up	2.0
+too early	1.5
+wrap	1.5
+highway's live	3.5
+heard that	1.5
+caught the ping	1.5
