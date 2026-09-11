@@ -31,6 +31,10 @@ def main(argv: list[str] | None = None) -> int:
     pk.add_argument("candidates", nargs="+", help="Candidate reply strings")
     pk.add_argument("--seed", type=int, default=0)
 
+    rp = sub.add_parser("replay", help="Replay events.jsonl into picked reactions")
+    rp.add_argument("events", type=Path)
+    rp.add_argument("--bank", type=Path, default=None)
+
     args = parser.parse_args(argv)
     if args.cmd == "say":
         prompt = " ".join(args.prompt)
@@ -58,6 +62,12 @@ def main(argv: list[str] | None = None) -> int:
         result = pick(brain, tok, args.prompt, list(args.candidates))
         print(f"mode={result.mode} score={result.score:.4f}")
         print(result.text)
+        return 0
+    if args.cmd == "replay":
+        from flycast.replay import replay
+
+        for line in replay(args.events, bank_path=args.bank):
+            print(line)
         return 0
     return 2
 
