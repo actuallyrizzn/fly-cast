@@ -31,6 +31,19 @@ def main(argv: list[str] | None = None) -> int:
     say.add_argument("--max-tokens", type=int, default=24)
     say.add_argument("--seed", type=int, default=0)
 
+    wr = sub.add_parser(
+        "write",
+        help="Free-write from Level A reaction checkpoint (additive; picker stays live default)",
+    )
+    wr.add_argument("prompt", nargs="+", help="Cue / prompt text (e.g. MISS or HIT Nice catch)")
+    wr.add_argument("--checkpoint", type=Path, default=None)
+    wr.add_argument("--max-tokens", type=int, default=16)
+    wr.add_argument("--min-tokens", type=int, default=3)
+    wr.add_argument("--temperature", type=float, default=0.7)
+    wr.add_argument("--seed", type=int, default=0)
+    wr.add_argument("--guard", action="store_true")
+    wr.add_argument("--stop-path", type=Path, default=None)
+
     of = sub.add_parser("overfit", help="Overfit a tiny practice file (harness gate)")
     of.add_argument("path", type=Path, help="Practice text file")
     of.add_argument("--epochs", type=int, default=60)
@@ -81,6 +94,12 @@ def main(argv: list[str] | None = None) -> int:
     lv.add_argument("--line-log", type=Path, default=None)
     lv.add_argument("--follow", action="store_true", help="Tail the file (default: one-shot)")
     lv.add_argument("--seconds", type=float, default=None, help="Max seconds when --follow")
+    lv.add_argument(
+        "--freewrite",
+        action="store_true",
+        help="Use Level A free-write checkpoint instead of picker (additive flag)",
+    )
+    lv.add_argument("--checkpoint", type=Path, default=None, help="Free-write checkpoint path")
 
     args = parser.parse_args(argv)
     if args.profile is not None:
@@ -93,6 +112,34 @@ def main(argv: list[str] | None = None) -> int:
         brain = build_fly_brain(vocab_size=tok.size, seed=args.seed)
         out = generate(brain, tok, prompt, max_tokens=args.max_tokens, seed=args.seed)
         print(out or "(empty)")
+        return 0
+    if args.cmd == "write":
+        from flycast.guard import Guard
+        from flycast.prompt import Event
+        from flycast.write import freewrite, load_writer
+
+        prompt = " ".join(args.prompt)
+        brain, tok, ckpt = load_writer(args.checkpoint)
+        # Treat first token as cue when it looks like one.
+        parts = prompt.split(None, 1)
+        cue = parts[0].upper()
+        detail = parts[1] if len(parts) > 1 else ""
+        result = freewrite(
+            brain,
+            tok,
+            [Event(cue, detail)],
+            max_tokens=args.max_tokens,
+            min_tokens=args.min_tokens,
+            temperature=args.temperature,
+            seed=args.seed,
+        )
+        text = result.text
+        if args.guard or args.stop_path:
+            g = Guard(stop_path=args.stop_path or (Path.home() / "fly-cast" / "STOP"))
+            checked = g.check(text, cues=prompt, mode="wrote")
+            text = checked.filtered if checked.allowed else f"(silent:{checked.reason})"
+        print(f"mode={result.mode} ckpt={ckpt}")
+        print(text or "(empty)")
         return 0
     if args.cmd == "overfit":
         result = overfit_practice(args.path, seed=args.seed, epochs=args.epochs)
@@ -182,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
                 stop_path=stop,
                 line_log=args.line_log,
                 max_seconds=args.seconds,
+                freewrite=args.freewrite,
+                checkpoint=args.checkpoint,
             )
         else:
             for line in run_once(
@@ -190,6 +239,8 @@ def main(argv: list[str] | None = None) -> int:
                 state_path=args.state_path,
                 stop_path=stop,
                 line_log=args.line_log,
+                freewrite=args.freewrite,
+                checkpoint=args.checkpoint,
             ):
                 print(line)
         return 0

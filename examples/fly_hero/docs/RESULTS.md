@@ -89,6 +89,36 @@ B is **+0.83 CE worse** than A (gate margin 0.05). **Gate: B_LOSES.** Level C st
 | That's a wrap | . | for the chart done. |
 | On time | . | . |
 
+## Reaction free-write climb v2 (CPU)
+
+| | |
+|--|--|
+| Date | 2026-09-11 |
+| Train | `reaction_train.txt` v2 (200 lines; cue-prefixed + paraphrases) |
+| Script | `tools/climb_reaction_freewrite.py` |
+| Checkpoint | `artifacts/reaction-climb/level_a.npz` (local; rebuild via climb script) |
+
+### Honesty (held-out CE)
+
+| Control | CE |
+|---|---|
+| Fly (A) | 5.09 |
+| Scramble | 5.14 |
+| No-fly | 5.19 |
+| Level B fly | 5.88 |
+
+Fly beats scramble and no-fly. **B still loses** (+0.79). Level C stays parked.
+
+### Samples (cue prompts, min_tokens=3)
+
+| Prompt | A | B |
+|---|---|---|
+| MISS | late on. | dropped yellow. |
+| HIT | timed scored. | clean good. |
+| SONG_END | green. green. | a wrap. |
+
+Additive CLI: `flycast write MISS` (loads Level A checkpoint). Live default stays picker; optional `flycast live … --freewrite`.
+
 ## License
 
 This write-up: **CC-BY-SA-4.0**. TinyStories excerpt: **CDLA-Sharing-1.0**. [LICENSING.md](../../../LICENSING.md).

@@ -30,13 +30,17 @@ Numbers: [RESULTS.md](RESULTS.md) (reaction climb section).
 
 B wins if held-out CE improves by ≥0.05 vs A. Level C only after that. Live free-write only behind an explicit flag after a free-write win.
 
-### Latest run (2026-09-11)
+### Latest run (2026-09-11) — climb v2
 
 | | CE |
 |--|-----|
-| A fly | 3.36 |
-| B fly | 4.20 |
-| Scramble | 3.35 |
-| No-fly | 3.59 |
+| A fly | 5.09 |
+| Scramble | 5.14 |
+| No-fly | 5.19 |
+| B fly | 5.88 |
 
-**B_LOSES** (+0.83). Iterate corpus/hyperparams next; Level C stays parked. See [RESULTS.md](RESULTS.md).
+**B_LOSES** (+0.79). Fly beats scramble and no-fly on reaction held-out. Readable A samples 6/7 with cue-shaped prompts + `min_tokens`.
+
+Additive path: `flycast write …` and `flycast live … --freewrite` (checkpoint from climb). Picker remains live default.
+
+See [RESULTS.md](RESULTS.md).

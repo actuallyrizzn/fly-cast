@@ -1,82 +1,204 @@
-# Reaction-shaped free-write train corpus (Fly Hero mouth).
+# Reaction-shaped free-write train corpus (Fly Hero mouth) v2.
 # Held-out lines live in reaction_heldout.txt — do not copy them here.
-# Built from reply bank + lexicon phrases + light paraphrases.
+# Includes cue-prefixed lines so free-write matches live prompt shape.
 
 Nice catch.
+HIT Nice catch.
+HIT on time hit.
+HIT nice catch there.
 On time.
+HIT On time.
 Got it.
+HIT Got it.
 Okay.
+HIT Okay.
+Clean strum.
+HIT Clean strum.
+Right on the beat.
+HIT Right on the beat.
+Nailed the hit.
+HIT Nailed the hit.
+Solid hit.
+HIT Solid hit.
+Frets lined up.
+HIT Frets lined up.
+Timing good.
+HIT Timing good.
+Hit landed.
+HIT Hit landed.
+That one counted.
+HIT That one counted.
 Dropped that one.
+MISS Dropped that one.
+MISS missed a note.
+MISS dropped that fret.
 Missed it.
+MISS Missed it.
 That note got away.
+MISS That note got away.
 Oh well.
+MISS Oh well.
+Slipped on green.
+MISS Slipped on green.
+Lost the note.
+MISS Lost the note.
+Whiffed that fret.
+MISS Whiffed that fret.
+Came in late.
+MISS Came in late.
+Note escaped.
+MISS Note escaped.
+Missed the window.
+MISS Missed the window.
+Dropped green.
+MISS Dropped green.
+Dropped red.
+MISS Dropped red.
+Dropped yellow.
+MISS Dropped yellow.
+Dropped blue.
+MISS Dropped blue.
+Dropped orange.
+MISS Dropped orange.
 Streak going.
+STREAK Streak going.
+STREAK keep it rolling now.
+STREAK streak going strong.
 Keep it rolling.
+STREAK Keep it rolling.
 Still hitting.
+STREAK Still hitting.
 Cool.
-Overstrum ease up.
+STREAK Cool.
+Combo climbing.
+STREAK Combo climbing.
+Streak is hot.
+STREAK Streak is hot.
+Chain still alive.
+STREAK Chain still alive.
+Keep the combo.
+STREAK Keep the combo.
+Notes in a row.
+STREAK Notes in a row.
+Streak holds.
+STREAK Streak holds.
+Riding the streak.
+STREAK Riding the streak.
+Overstrum — ease up.
+OVERSTRUM Overstrum — ease up.
 Too early there.
+OVERSTRUM Too early there.
 Wait for it next time.
+OVERSTRUM Wait for it next time.
+Early strum.
+OVERSTRUM Early strum.
+Pulled too soon.
+OVERSTRUM Pulled too soon.
+Hold for the note.
+OVERSTRUM Hold for the note.
+Back off the strum.
+OVERSTRUM Back off the strum.
 Song starting.
+SONG_START Song starting.
+SONG_START here we go now.
+SONG_START song starting now.
 Here we go.
+SONG_START Here we go.
 Highway's live.
+SONG_START Highway's live.
 Alright.
+SONG_START Alright.
+Chart loading.
+SONG_START Chart loading.
+Count in.
+SONG_START Count in.
+Song is live.
+SONG_START Song is live.
+Frets ready.
+SONG_START Frets ready.
+Kickoff.
+SONG_START Kickoff.
+Intro hits.
+SONG_START Intro hits.
 Song over.
+SONG_END Song over.
+SONG_END that is a wrap.
+SONG_END song over now.
 That's a wrap.
+SONG_END That's a wrap.
 Final chart done.
+SONG_END Final chart done.
 Done.
+SONG_END Done.
+Chart complete.
+SONG_END Chart complete.
+End of song.
+SONG_END End of song.
+Last note done.
+SONG_END Last note done.
+Session wrap.
+SONG_END Session wrap.
+Finished the chart.
+SONG_END Finished the chart.
 Score is in.
+SCORE Score is in.
 Run finished.
+SCORE Run finished.
 Results are up.
+SCORE Results are up.
+Score posted.
+SCORE Score posted.
+Numbers are in.
+SCORE Numbers are in.
+Final score up.
+SCORE Final score up.
+Run scored.
+SCORE Run scored.
 Heard that.
+CHAT Heard that.
 Reading chat.
+CHAT Reading chat.
 Got your message.
+CHAT Got your message.
+Chat noted.
+CHAT Chat noted.
+Message received.
+CHAT Message received.
+Reading the line.
+CHAT Reading the line.
 Saw the mention.
+SOCIAL Saw the mention.
 Noting that reply.
+SOCIAL Noting that reply.
 Caught the ping.
-Missed a note on green.
-Dropped a fret there.
-Nice hit on time.
-Got the strum clean.
-Streak still going strong.
-Keep rolling through the chart.
-Still hitting those notes.
-Song is starting now.
-Here we go again.
-Highway live play clean.
-Song is over now.
-That is a wrap for the chart.
-Final notes done.
-Score came in clean.
-This run finished.
-Results posted for the run.
-Ease up on the overstrum.
-Too early on that strum.
-Wait for the note next time.
-Caught that hit.
-On time with the strum.
-Missed the yellow note.
-Dropped red there.
-Streak climbing keep going.
-Keep the streak rolling.
-Song starting get ready.
-Wrap the song clean.
-Highway chart is live.
-Play on through the frets.
-Clean frets this time.
-Hit green on time.
-Hit red on time.
-Missed blue that time.
-Overstrum on orange ease up.
-Score locked for the song.
-Chat line heard that.
-Social ping caught it.
-Reading the chat line.
-Noting the social reply.
-Okay that works.
-Cool still going.
-Alright song starts.
-Done with that chart.
-Oh well missed one.
-Got your chat message.
-Saw that social mention.
+SOCIAL Caught the ping.
+Mention noted.
+SOCIAL Mention noted.
+Ping received.
+SOCIAL Ping received.
+Social line seen.
+SOCIAL Social line seen.
+MISS late on green.
+HIT clean on green.
+HIT timed green well.
+LANE_G hit green.
+MISS slipped on red.
+MISS late on red.
+HIT clean on red.
+HIT timed red well.
+LANE_R hit red.
+MISS slipped on yellow.
+MISS late on yellow.
+HIT clean on yellow.
+HIT timed yellow well.
+LANE_Y hit yellow.
+MISS slipped on blue.
+MISS late on blue.
+HIT clean on blue.
+HIT timed blue well.
+LANE_B hit blue.
+MISS slipped on orange.
+MISS late on orange.
+HIT clean on orange.
+HIT timed orange well.
+LANE_O hit orange.

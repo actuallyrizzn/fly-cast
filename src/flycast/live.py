@@ -25,6 +25,7 @@ def process_event(
     profile: Profile,
     last_hit_t: float = 0.0,
     hit_min_interval_s: float = 5.0,
+    freewrite: bool = False,
 ) -> tuple[str | None, float]:
     window.append(ev.as_prompt_event())
     del window[:-6]
@@ -41,7 +42,12 @@ def process_event(
 
     detail = f" {ev.detail}" if ev.detail else ""
     cues = f"{ev.cue}{detail}".strip()
-    result = react(brain, tok, window, bank=bank, profile=profile)
+    if freewrite:
+        from flycast.write import freewrite as freewrite_fn
+
+        result = freewrite_fn(brain, tok, window, profile=profile)
+    else:
+        result = react(brain, tok, window, bank=bank, profile=profile)
     g = guard.check(
         result.text,
         cues=cues,
@@ -71,14 +77,22 @@ def run_once(
     stop_path: Path | None = None,
     line_log: Path | None = None,
     profile: Profile | None = None,
+    freewrite: bool = False,
+    checkpoint: Path | None = None,
 ) -> list[str]:
     """Replay existing events into overlay (no follow)."""
     profile = profile or default_profile()
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
     guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
-    brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
+    if freewrite:
+        from flycast.write import load_writer
+
+        brain, tok, _ckpt = load_writer(checkpoint)
+        bank = {}
+    else:
+        brain, tok = demo_brain()
+        bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     window: list = []
     lines: list[str] = []
     write_state(
@@ -100,6 +114,7 @@ def run_once(
             state_path=state_path,
             profile=profile,
             last_hit_t=last_hit_t,
+            freewrite=freewrite,
         )
         if out:
             lines.append(out)
@@ -117,14 +132,22 @@ def run_follow(
     print_lines: bool = True,
     from_start: bool = False,
     profile: Profile | None = None,
+    freewrite: bool = False,
+    checkpoint: Path | None = None,
 ) -> list[str]:
     """Tail events file and update overlay until max_seconds elapses."""
     profile = profile or default_profile()
     state_path = state_path or default_state_path()
     stop_path = stop_path or (Path.home() / "fly-cast" / "STOP")
     guard = Guard(stop_path=stop_path, log_path=line_log, dedupe_ttl_s=2.0)
-    brain, tok = demo_brain()
-    bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
+    if freewrite:
+        from flycast.write import load_writer
+
+        brain, tok, _ckpt = load_writer(checkpoint)
+        bank = {}
+    else:
+        brain, tok = demo_brain()
+        bank = load_bank(bank_path) if bank_path else load_bank(profile.bank_path)
     window: list = []
     lines: list[str] = []
     write_state(
@@ -153,6 +176,7 @@ def run_follow(
             state_path=state_path,
             profile=profile,
             last_hit_t=last_hit_t,
+            freewrite=freewrite,
         )
         if out:
             lines.append(out)
