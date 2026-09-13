@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parents[2]
 LOG_DEFAULT = ROOT / "artifacts" / "lab4" / "lab4-run.log"
 PASS = Path.home() / ".ssh" / "tasks-dsc-flycast-lab.pass"
 DOC_ID = 1332
+LABEL = "Lab 4 Level C"
+PGREP = "python -u tools/lab4/lab4_run.py"
 JUDGE = Path("/root/flycast-mouth-judge")
 AGENT = Path.home() / ".local" / "bin" / "agent"
 
@@ -201,7 +203,7 @@ def grok_bluf(st: dict, log_tail: str) -> str:
     prompt.write_text(
         "\n".join(
             [
-                "# Lab 4 progress — write ONE short plain-English paragraph (≤80 words).",
+                f"# {LABEL} progress — write ONE short plain-English paragraph (≤80 words).",
                 "No code. Say: what stage, what the numbers mean vs bigram ~3.05, whether to stay engaged.",
                 "",
                 f"phase: {st['phase']}",
@@ -330,7 +332,7 @@ def _mermaid_chart(st: dict) -> str:
     lines = [
         "```mermaid",
         "xychart-beta",
-        '  title "Lab 4 train/valid CE (lower better)"',
+        f'  title "{LABEL} train/valid CE (lower better)"',
         f"  x-axis [{lab}]",
         "  y-axis \"CE\" 2.8 --> 5.2",
         f"  line \"train\" [{tr}]",
@@ -356,7 +358,7 @@ def render_body(st: dict, *, bluf: str = "", lab4_alive: bool = True) -> str:
 
     status = "RUNNING" if lab4_alive and st["phase"] != "done" else ("DONE" if st["phase"] == "done" else "STOPPED?")
     lines = [
-        "# Fly Cast — Lab 4 Level C",
+        f"# Fly Cast — {LABEL}",
         "",
         f"**Updated:** {now} (live progress sidecar)",
         f"**Run:** `{st['run']}`",
@@ -475,7 +477,14 @@ def main() -> int:
     ap.add_argument("--doc-id", type=int, default=DOC_ID)
     ap.add_argument("--grok-every", type=int, default=3, help="Grok BLUF every N publishes (0=off)")
     ap.add_argument("--once", action="store_true")
+    ap.add_argument("--label", default="Lab 4 Level C", help="human label used in titles/BLUF prompt")
+    ap.add_argument("--state", type=Path, default=None, help="state json path (default artifacts/lab4/progress-chronicle.state.json)")
+    ap.add_argument("--pgrep", default="python -u tools/lab4/lab4_run.py", help="process pattern that means the run is alive")
     args = ap.parse_args()
+    global LABEL, PGREP, STATE_PATH
+    LABEL, PGREP = args.label, args.pgrep
+    if args.state:
+        STATE_PATH = args.state
 
     if not PASS.is_file():
         raise SystemExit(f"missing {PASS}")
@@ -500,7 +509,7 @@ def main() -> int:
         st = parse_state(text)
         fp = fingerprint(st)
         lab4_alive = (
-            subprocess.run(["pgrep", "-f", "python -u tools/lab4/lab4_run.py"], capture_output=True).returncode
+            subprocess.run(["pgrep", "-f", PGREP], capture_output=True).returncode
             == 0
         )
         if fp != last_fp or args.once:
@@ -525,7 +534,7 @@ def main() -> int:
                     "update-document.php",
                     {
                         "id": args.doc_id,
-                        "title": f"Fly Cast — Lab 4 Level C ({st['run']})",
+                        "title": f"Fly Cast — {LABEL} ({st['run']})",
                         "body": body,
                         "directory_path": "research",
                     },

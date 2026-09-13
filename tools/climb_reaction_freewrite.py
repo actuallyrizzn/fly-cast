@@ -2,10 +2,12 @@
 """Reaction free-write climb: Level A honesty + Level B gate (CPU).
 
   . .venv/bin/activate && python tools/climb_reaction_freewrite.py
+  python tools/climb_reaction_freewrite.py --train examples/fly_hero/fixtures/reaction_train_v3.txt
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime, timezone
@@ -21,11 +23,11 @@ from flycast.tokenizer import Tokenizer
 from flycast.train import _nll, _pairs, eval_fly_ce, train_fly_level_a, train_fly_level_b, train_no_fly
 
 PROFILE = ROOT / "examples" / "fly_hero"
-TRAIN_PATH = PROFILE / "fixtures" / "reaction_train.txt"
-HELD_PATH = PROFILE / "fixtures" / "reaction_heldout.txt"
+DEFAULT_TRAIN = PROFILE / "fixtures" / "reaction_train.txt"
+DEFAULT_HELD = PROFILE / "fixtures" / "reaction_heldout.txt"
 ARTIFACTS = ROOT / "artifacts" / "reaction-climb"
 B_WIN_MARGIN = 0.05
-# Cue-shaped prompts match v2 corpus (additive free-write UX).
+# Cue-shaped prompts match v2/v3 corpus (additive free-write UX).
 SAMPLE_PROMPTS = (
     "MISS",
     "MISS Missed it",
@@ -46,14 +48,30 @@ def _lines(path: Path) -> list[str]:
 
 
 def main() -> int:
-    train_lines = _lines(TRAIN_PATH)
-    held = _lines(HELD_PATH)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--train", type=Path, default=DEFAULT_TRAIN)
+    ap.add_argument("--heldout", type=Path, default=DEFAULT_HELD)
+    ap.add_argument("--artifacts", type=Path, default=ARTIFACTS)
+    ap.add_argument("--max-pairs-a", type=int, default=0, help="0 = scale with corpus")
+    ap.add_argument("--max-pairs-b", type=int, default=0)
+    ap.add_argument("--epochs-b", type=int, default=3)
+    args = ap.parse_args()
+
+    train_path = args.train if args.train.is_absolute() else ROOT / args.train
+    held_path = args.heldout if args.heldout.is_absolute() else ROOT / args.heldout
+    artifacts = args.artifacts if args.artifacts.is_absolute() else ROOT / args.artifacts
+
+    train_lines = _lines(train_path)
+    held = _lines(held_path)
     train_lower = {ln.lower() for ln in train_lines}
     leaked = [h for h in held if h.lower() in train_lower]
     if leaked:
         raise SystemExit(f"held-out leak into train: {leaked}")
 
-    tok = Tokenizer.build(train_lines + held, max_vocab=1200)
+    max_a = args.max_pairs_a or min(50000, max(2500, len(train_lines) * 4))
+    max_b = args.max_pairs_b or min(20000, max(1200, len(train_lines) * 2))
+
+    tok = Tokenizer.build(train_lines + held, max_vocab=min(4000, max(1200, len(train_lines) // 3)))
 
     fly_a = build_fly_brain(vocab_size=tok.size, seed=0, scrambled=False)
     fly_b = build_fly_brain(vocab_size=tok.size, seed=0, scrambled=False)
@@ -62,14 +80,16 @@ def main() -> int:
     scr.embed = fly_a.embed.copy()
     nof = build_no_fly(vocab_size=tok.size, seed=0)
 
-    train_fly_level_a(fly_a, tok, train_lines, max_pairs=2500)
+    train_fly_level_a(fly_a, tok, train_lines, max_pairs=max_a)
     fly_b.readout = fly_a.readout.copy()
     if hasattr(fly_a, "_logit_bias"):
         fly_b._logit_bias = fly_a._logit_bias.copy()
     # Gentle B — prior run overfit; keep W frozen, light SGD.
-    train_fly_level_b(fly_b, tok, train_lines, epochs=3, lr=0.01, max_pairs=1200, seed=0)
-    train_fly_level_a(scr, tok, train_lines, max_pairs=2500)
-    train_no_fly(nof, tok, train_lines, max_pairs=2500)
+    train_fly_level_b(
+        fly_b, tok, train_lines, epochs=args.epochs_b, lr=0.01, max_pairs=max_b, seed=0
+    )
+    train_fly_level_a(scr, tok, train_lines, max_pairs=max_a)
+    train_no_fly(nof, tok, train_lines, max_pairs=max_a)
 
     ce_a = eval_fly_ce(fly_a, tok, held, max_pairs=800)
     ce_b = eval_fly_ce(fly_b, tok, held, max_pairs=800)
@@ -108,29 +128,40 @@ def main() -> int:
     print(f"\n=== Gate (margin {B_WIN_MARGIN}) ===")
     print(gate)
     print(f"readable_A_samples: {readable_a}/{len(samples)}")
+    print(f"train_lines: {len(train_lines)} max_pairs_a={max_a} max_pairs_b={max_b}")
     print("\n=== Samples (min_tokens=3) ===")
     for prompt, pair in samples.items():
         print(f"A | {prompt!r} → {pair['A']}")
         print(f"B | {prompt!r} → {pair['B']}")
 
-    ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    ckpt = ARTIFACTS / "level_a.npz"
+    artifacts.mkdir(parents=True, exist_ok=True)
+    ckpt = artifacts / "level_a.npz"
+    try:
+        train_rel = str(train_path.relative_to(ROOT))
+    except ValueError:
+        train_rel = str(train_path)
     save_level_a(
         ckpt,
         fly_a,
         tok,
-        meta={"train": str(TRAIN_PATH.relative_to(ROOT)), "ce_a": ce_a},
+        meta={"train": train_rel, "ce_a": ce_a, "train_lines": len(train_lines)},
     )
-    print(f"\nwrote {ckpt.relative_to(ROOT)}")
+    print(f"\nwrote {ckpt}")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    try:
+        held_rel = str(held_path.relative_to(ROOT))
+    except ValueError:
+        held_rel = str(held_path)
     payload = {
         "stamp": stamp,
-        "train_path": str(TRAIN_PATH.relative_to(ROOT)),
-        "held_path": str(HELD_PATH.relative_to(ROOT)),
+        "train_path": train_rel,
+        "held_path": held_rel,
         "train_lines": len(train_lines),
         "held_lines": len(held),
         "vocab": tok.size,
+        "max_pairs_a": max_a,
+        "max_pairs_b": max_b,
         "ce": {
             "level_a_fly": ce_a,
             "level_b_fly": ce_b,
@@ -144,12 +175,12 @@ def main() -> int:
         "readable_a_samples": readable_a,
         "sample_count": len(samples),
         "samples": samples,
-        "checkpoint": str(ckpt.relative_to(ROOT)),
+        "checkpoint": str(ckpt),
     }
-    out = ARTIFACTS / f"run-{stamp}.json"
+    out = artifacts / f"run-{stamp}.json"
     out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    (ARTIFACTS / "latest.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {out.relative_to(ROOT)}")
+    (artifacts / "latest.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {out}")
     return 0
 
 

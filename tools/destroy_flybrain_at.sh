@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Auto-destroy BitLaunch FlyBrain at a fixed UTC time (24h time-box).
+set -euo pipefail
+TARGET_UTC="${1:-2026-09-14T01:27:00Z}"
+SERVER_ID="${2:-6aa4aa62c9c98a4525087c18}"
+LOG="${FLYCAST_DESTROY_LOG:-/root/projects/fly-cast/artifacts/corpus-gen/flybrain-destroy-at.log}"
+mkdir -p "$(dirname "$LOG")"
+TARGET_EPOCH=$(date -u -d "${TARGET_UTC/Z/}" +%s 2>/dev/null || date -u -d "$TARGET_UTC" +%s)
+NOW=$(date -u +%s)
+SLEEP=$((TARGET_EPOCH - NOW))
+if (( SLEEP < 0 )); then SLEEP=0; fi
+echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] sleeping ${SLEEP}s until $TARGET_UTC then destroy $SERVER_ID" | tee -a "$LOG"
+sleep "$SLEEP"
+echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] destroying $SERVER_ID" | tee -a "$LOG"
+sshpass -f ~/.ssh/athena-moya.pass ssh -o StrictHostKeyChecking=no moya \
+  "cd /home/rizzn/sanctum/agents/ada/smcp/plugins/bitlaunch && set -a && . /home/rizzn/sanctum/agents/ada/smcp/env.smcp && set +a && /home/rizzn/sanctum/venv/bin/python cli.py servers_destroy --server_id '$SERVER_ID'" \
+  2>&1 | tee -a "$LOG"
+echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] destroy command finished" | tee -a "$LOG"
