@@ -58,6 +58,7 @@ def fit_level_c_softmax(
     l2: float = 1e-5,
     pairs_per_epoch: int = 40000,
     seed: int = 0,
+    early_stop_patience: int = 2,
     log=print,
 ) -> tuple[RidgeReadout, dict]:
     """Level C: Adam on readout + embeds + syn_val (sign/mask frozen). Softmax CE."""
@@ -212,8 +213,8 @@ def fit_level_c_softmax(
         )
         if vce < best[0]:
             best = (vce, W.copy(), b.copy(), brain.embed.copy(), brain.syn_val.copy(), ep)
-        elif ep - best[5] >= 2:
-            log("    Level-C early stop")
+        elif ep - best[5] >= max(early_stop_patience, 1):
+            log(f"    Level-C early stop (patience={early_stop_patience})")
             break
 
     vce_b, Wb, bb, Eb, Sb, ep_b = best
@@ -244,6 +245,8 @@ def train_lab4(
     pairs_per_epoch: int = 40000,
     softmax_a_epochs: int = 5,
     scramble_pairs_per_epoch: int | None = None,
+    early_stop_patience_b: int = 2,
+    early_stop_patience_c: int = 2,
     log=print,
 ) -> dict:
     """Lab 4: Lab3 warm-start then Level C; scramble gets the same recipe."""
@@ -273,7 +276,8 @@ def train_lab4(
 
     ro_b, b_info = fit_level_b_softmax(
         brain, tok, tr, va, init_ro=ro_a,
-        epochs=level_b_epochs, pairs_per_epoch=min(pairs_per_epoch, 20000), log=log,
+        epochs=level_b_epochs, pairs_per_epoch=min(pairs_per_epoch, 20000),
+        early_stop_patience=early_stop_patience_b, log=log,
     )
     res = FastReservoir(brain)
     held_b = eval_held_ce(res, ro_b, he)
@@ -281,7 +285,8 @@ def train_lab4(
 
     ro_c, c_info = fit_level_c_softmax(
         brain, tok, tr, va, init_ro=ro_b,
-        epochs=level_c_epochs, pairs_per_epoch=pairs_per_epoch, log=log,
+        epochs=level_c_epochs, pairs_per_epoch=pairs_per_epoch,
+        early_stop_patience=early_stop_patience_c, log=log,
     )
     res = FastReservoir(brain)
     held_c = eval_held_ce(res, ro_c, he)

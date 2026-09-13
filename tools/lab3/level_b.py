@@ -61,6 +61,7 @@ def fit_level_b_softmax(
     l2: float = 1e-5,
     pairs_per_epoch: int = 12000,
     seed: int = 0,
+    early_stop_patience: int = 2,
     log=print,
 ) -> tuple[RidgeReadout, dict]:
     """Level B: Adam on readout + input embeds; W frozen. Softmax CE.
@@ -164,8 +165,8 @@ def fit_level_b_softmax(
         log(f"    Level-B softmax ep{ep}: train CE {train_ce:.4f}  valid CE {vce:.4f}  pairs={pairs_done} ({hist[-1]['seconds']}s)")
         if vce < best[0]:
             best = (vce, W.copy(), b.copy(), brain.embed.copy(), ep)
-        elif ep - best[4] >= 2:
-            log("    Level-B early stop")
+        elif ep - best[4] >= max(early_stop_patience, 1):
+            log(f"    Level-B early stop (patience={early_stop_patience})")
             break
 
     vce_b, Wb, bb, Eb, ep_b = best

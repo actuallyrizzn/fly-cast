@@ -37,3 +37,7 @@ nohup "$PY" -u tools/lab4/lab4_progress_chronicle.py \
   --interval 60 --grok-every 2 \
   >> artifacts/lab5/desk/progress-chronicle.log 2>&1 &
 echo "chronicle pid=$!" | tee -a "$LOG"
+
+# Chain Lab 6 (Clone Hero rematch) behind this desk run — Doc #1335
+nohup bash tools/lab6/start_lab6_after_lab5.sh >> artifacts/lab6/launcher.log 2>&1 &
+echo "lab6 waiter pid=$!" | tee -a "$LOG"

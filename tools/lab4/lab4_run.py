@@ -47,6 +47,8 @@ def main() -> int:
     ap.add_argument("--level-c-epochs", type=int, default=8)
     ap.add_argument("--pairs-per-epoch", type=int, default=40000)
     ap.add_argument("--softmax-a-epochs", type=int, default=5)
+    ap.add_argument("--early-stop-patience-b", type=int, default=2, help="Level-B epochs without valid CE gain before stop")
+    ap.add_argument("--early-stop-patience-c", type=int, default=2, help="Level-C epochs without valid CE gain before stop")
     ap.add_argument("--scramble-pairs-per-epoch", type=int, default=None, help="cap scramble Level-C pairs/epoch (clock budget)")
     ap.add_argument("--out-root", type=Path, default=None, help="run dir parent (default artifacts/lab4)")
     args = ap.parse_args()
@@ -77,6 +79,8 @@ def main() -> int:
         pairs_per_epoch=args.pairs_per_epoch,
         softmax_a_epochs=args.softmax_a_epochs,
         scramble_pairs_per_epoch=args.scramble_pairs_per_epoch,
+        early_stop_patience_b=args.early_stop_patience_b,
+        early_stop_patience_c=args.early_stop_patience_c,
         log=_log,
     )
 
@@ -85,15 +89,27 @@ def main() -> int:
         import numpy as np  # noqa: PLC0415
 
         b = info["brain"]
+        ro = info["ro"]
         np.savez_compressed(
             out / "fly_model.npz",
             syn_pre=b.syn_pre, syn_post=b.syn_post, syn_val=b.syn_val, inject=b.inject,
-            embed=b.embed, readout=np.asarray(info["ro"]),
-            meta=json.dumps({"n_neurons": int(b.n_neurons), "leak": float(b.leak), "steps": int(b.steps),
-                             "input_scale": float(b.input_scale), "cfg": cfg.to_dict()}),
+            embed=b.embed, ro_w=ro.w, ro_b=ro.b,
+            meta=json.dumps({
+                "n_neurons": int(b.n_neurons), "leak": float(b.leak), "steps": int(b.steps),
+                "input_scale": float(b.input_scale), "gain": float(ro.gain),
+                "cfg": cfg.to_dict(),
+                "heldout_ce": float(info["heldout_ce"]),
+                "heldout_ce_level_b": float(info["heldout_ce_level_b"]),
+                "scramble_ce": float(info["scramble_ce"]),
+                "beats_bigram": bool(info.get("beats_bigram")),
+                "beats_trigram": bool(info.get("beats_trigram")),
+            }),
         )
         info["tok"].save(out / "tokenizer.json")
-        _log(f"  saved {out / 'fly_model.npz'} + tokenizer.json")
+        # Stable pointer for the talk CLI
+        latest = root_out / "LATEST"
+        latest.write_text(str(out.resolve()) + "\n", encoding="utf-8")
+        _log(f"  saved {out / 'fly_model.npz'} + tokenizer.json  LATEST→{out.name}")
     except Exception as exc:  # noqa: BLE001
         _log(f"  save warn: {exc}")
 
