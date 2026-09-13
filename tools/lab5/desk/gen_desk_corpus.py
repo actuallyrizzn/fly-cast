@@ -148,13 +148,13 @@ def batch_prompt(rng: random.Random, n: int) -> tuple[str, list[str]]:
     return p, tags
 
 
-def call_venice(key: str, model: str, system: str, user: str, timeout: int = 180) -> str:
+def call_venice(key: str, model: str, system: str, user: str, timeout: int = 420, max_tokens: int = 6000) -> str:
     body = {
         "model": model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
         "temperature": 0.9,
-        "max_tokens": 6000,
-        "venice_parameters": {"include_venice_system_prompt": False},
+        "max_tokens": max_tokens,
+        "venice_parameters": {"include_venice_system_prompt": False, "strip_thinking_response": True},
     }
     req = urllib.request.Request(
         VENICE, data=json.dumps(body).encode(), method="POST",
@@ -163,7 +163,11 @@ def call_venice(key: str, model: str, system: str, user: str, timeout: int = 180
     with urllib.request.urlopen(req, timeout=timeout) as r:
         d = json.load(r)
     usage = d.get("usage", {})
-    return d["choices"][0]["message"]["content"], usage
+    msg = d["choices"][0].get("message", {}) or {}
+    content = msg.get("content") or msg.get("reasoning_content") or ""
+    if not content:
+        raise RuntimeError(f"empty content finish={d['choices'][0].get('finish_reason')} usage={usage}")
+    return content, usage
 
 
 def parse_rows(text: str) -> list[dict]:
@@ -225,6 +229,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", type=Path, default=OUT / "desk_corpus.jsonl")
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--max-tokens", type=int, default=6000)
+    ap.add_argument("--timeout", type=int, default=420)
     args = ap.parse_args()
 
     key = load_env()
@@ -251,7 +257,7 @@ def main() -> int:
         prompt, tags = batch_prompt(r, args.per_call)
         for attempt in range(3):
             try:
-                text, usage = call_venice(key, args.model, system, prompt)
+                text, usage = call_venice(key, args.model, system, prompt, timeout=args.timeout, max_tokens=args.max_tokens)
                 rows = parse_rows(text)
                 if rows:
                     return rows, usage, tags
