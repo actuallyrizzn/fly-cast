@@ -277,13 +277,16 @@ def _ascii_chart(st: dict) -> str:
     """Terminal-style CE chart (always renders; no Mermaid dependency)."""
     labels, train, valid = _series(st)
     bi = st.get("floors", {}).get("bigram")
+    tri = st.get("floors", {}).get("trigram")
     if len(train) < 2:
         return "_Not enough epoch points for a chart yet._"
-    vals = train + valid + ([bi] if isinstance(bi, (int, float)) else [])
+    vals = list(train) + list(valid)
+    for f in (bi, tri):
+        if isinstance(f, (int, float)):
+            vals.append(float(f))
     lo = min(vals) - 0.05
     hi = max(vals) + 0.05
     height = 10
-    width = max(len(labels) * 3, 24)
 
     def row_for(series: list[float]) -> list[str]:
         cols = []
@@ -293,41 +296,56 @@ def _ascii_chart(st: dict) -> str:
             cols.append(y)
         return cols
 
+    def floor_row(val):
+        if not isinstance(val, (int, float)):
+            return None
+        y = int(round((hi - val) / (hi - lo) * (height - 1))) if hi > lo else 0
+        return max(0, min(height - 1, y))
+
     t_cols = row_for(train)
     v_cols = row_for(valid)
-    bi_row = None
-    if isinstance(bi, (int, float)):
-        bi_row = int(round((hi - bi) / (hi - lo) * (height - 1))) if hi > lo else 0
-        bi_row = max(0, min(height - 1, bi_row))
+    bi_row = floor_row(bi)
+    tri_row = floor_row(tri)
 
     grid = [[" " for _ in range(len(labels))] for _ in range(height)]
     for x, y in enumerate(t_cols):
         grid[y][x] = "*"
     for x, y in enumerate(v_cols):
         grid[y][x] = "o" if grid[y][x] == " " else "x"
+    # floors: bigram -, trigram ~  (draw floors first under points when empty)
     if bi_row is not None:
         for x in range(len(labels)):
             if grid[bi_row][x] == " ":
                 grid[bi_row][x] = "-"
+    if tri_row is not None:
+        for x in range(len(labels)):
+            if grid[tri_row][x] == " ":
+                grid[tri_row][x] = "~"
+            elif grid[tri_row][x] == "-":
+                grid[tri_row][x] = "="  # both floors on same row (unlikely)
 
-    lines = [f"CE ↓  (y {hi:.2f} … {lo:.2f})  *=train  o=valid  x=both  -=bigram {_fmt(bi)}"]
+    legend = f"*=train  o=valid  x=both  -=bigram {_fmt(bi)}"
+    if isinstance(tri, (int, float)):
+        legend += f"  ~=trigram {_fmt(tri)}"
+    lines = [f"CE ↓  (y {hi:.2f} … {lo:.2f})  {legend}"]
     for r in range(height):
         label = f"{hi - (hi - lo) * r / (height - 1):5.2f} │"
         lines.append(label + " ".join(grid[r][x] for x in range(len(labels))))
     lines.append("      └" + "─" * (len(labels) * 2))
     lines.append("       " + " ".join(f"{lb:>1}"[:2] for lb in labels))
-    del width  # kept for clarity if we pad later
     return "```\n" + "\n".join(lines) + "\n```"
 
 
 def _mermaid_chart(st: dict) -> str:
     labels, train, valid = _series(st)
     bi = st.get("floors", {}).get("bigram")
+    tri = st.get("floors", {}).get("trigram")
     if len(train) < 2:
         return ""
     vals = [v for v in train + valid if isinstance(v, (int, float))]
-    if isinstance(bi, (int, float)):
-        vals.append(float(bi))
+    for f in (bi, tri):
+        if isinstance(f, (int, float)):
+            vals.append(float(f))
     lo = min(vals)
     hi = max(vals)
     pad = max(0.05, (hi - lo) * 0.08)
@@ -349,6 +367,9 @@ def _mermaid_chart(st: dict) -> str:
     if isinstance(bi, (int, float)):
         floor = ", ".join(f"{bi:.3f}" for _ in labels)
         lines.append(f'  line "bigram" [{floor}]')
+    if isinstance(tri, (int, float)):
+        floor = ", ".join(f"{tri:.3f}" for _ in labels)
+        lines.append(f'  line "trigram" [{floor}]')
     lines += ["```", ""]
     return "\n".join(lines)
 
