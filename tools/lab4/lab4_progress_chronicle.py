@@ -420,6 +420,7 @@ def render_body(st: dict, *, bluf: str = "", lab4_alive: bool = True) -> str:
         f"| Level C held | {_fmt(st['c_held'])} |",
         f"| Scramble (C) | {_fmt(st['scr_held'])} |",
         f"| Bigram floor | {_fmt(bi)} |",
+            f"| Trigram floor | {_fmt(st.get("floors", {}).get("trigram"))} |",
         f"| Last log line | `{st['last_line'][:120]}` |",
         "",
         "## Epoch trail",
