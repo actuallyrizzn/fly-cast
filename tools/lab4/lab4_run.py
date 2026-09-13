@@ -62,6 +62,8 @@ def main() -> int:
     held = read_lines(args.heldout if args.heldout.is_absolute() else ROOT / args.heldout)
     floors_path = args.floors if args.floors.is_absolute() else ROOT / args.floors
     floors = json.loads(floors_path.read_text(encoding="utf-8"))
+    if "bigram" not in floors and isinstance(floors.get("models"), dict):
+        floors = floors["models"]  # lab2_baselines / lab5_desk_prep layout
 
     cfg = ReservoirCfg()
     _log(f"START Lab4 {out.name} train={len(train)} valid={len(valid)} held={len(held)}")
@@ -75,6 +77,23 @@ def main() -> int:
         softmax_a_epochs=args.softmax_a_epochs,
         log=_log,
     )
+
+    # Persist the trained fly (Lab 4 never did — F8 artifact-loss fix; Lab 5 desk eval needs it).
+    try:
+        import numpy as np  # noqa: PLC0415
+
+        b = info["brain"]
+        np.savez_compressed(
+            out / "fly_model.npz",
+            syn_pre=b.syn_pre, syn_post=b.syn_post, syn_val=b.syn_val, inject=b.inject,
+            embed=b.embed, readout=np.asarray(info["ro"]),
+            meta=json.dumps({"n_neurons": int(b.n_neurons), "leak": float(b.leak), "steps": int(b.steps),
+                             "input_scale": float(b.input_scale), "cfg": cfg.to_dict()}),
+        )
+        info["tok"].save(out / "tokenizer.json")
+        _log(f"  saved {out / 'fly_model.npz'} + tokenizer.json")
+    except Exception as exc:  # noqa: BLE001
+        _log(f"  save warn: {exc}")
 
     summary = {
         "lab": 4,

@@ -5,7 +5,7 @@ Line format (same tokenizer pipeline as Lab 2–4; cue = first token):
   DESK <situation> => <GO|NOGO> : <rationale>
 
 Split:
-  heldout.txt      Grok rows whose (structure, flows, calendar) regime combo is NEVER in train
+  heldout.txt      Grok+synth rows whose (structure, flows, calendar) regime combo is NEVER in train
   valid.txt        random 4% of remaining Grok rows (early-stop signal)
   train.txt        the rest
   heldout_gold.txt Astra-labelled rows (different teacher; decision-accuracy eval only)
@@ -29,6 +29,7 @@ from common import NGram, build_tokenizer, encode_lines, jdump, n_pairs, uniform
 DESK = ROOT / "artifacts" / "lab5" / "desk"
 DATA = DESK / "data"
 BULK = DESK / "desk_corpus_grok.jsonl"
+SYNTH = DESK / "desk_corpus_synth.jsonl"
 GOLD = DESK / "desk_gold_astra.jsonl"
 
 
@@ -59,7 +60,8 @@ def combo(r: dict) -> tuple[str, str, str]:
 
 def main() -> int:
     rng = random.Random(5)
-    bulk = rows(BULK)
+    bulk = rows(BULK) + rows(SYNTH)
+    seen = set(); bulk = [r for r in bulk if not (r["situation"].lower() in seen or seen.add(r["situation"].lower()))]
     gold = rows(GOLD)
     if not bulk:
         raise SystemExit(f"no bulk corpus at {BULK}")
