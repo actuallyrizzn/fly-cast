@@ -47,8 +47,12 @@ def resolve_run(path: Path | None) -> Path:
                     return r
         raise SystemExit("no saved fly_model.npz found — train a lab with save first")
     p = path if path.is_absolute() else ROOT / path
+    if p.is_file() and p.name == "LATEST":
+        return Path(p.read_text().strip())
     if p.is_file() and p.name == "fly_model.npz":
         return p.parent
+    if p.is_dir() and (p / "LATEST").is_file() and not (p / "fly_model.npz").is_file():
+        return Path((p / "LATEST").read_text().strip())
     if (p / "fly_model.npz").is_file():
         return p
     raise SystemExit(f"no fly_model.npz under {p}")
