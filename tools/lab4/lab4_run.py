@@ -47,6 +47,7 @@ def main() -> int:
     ap.add_argument("--level-c-epochs", type=int, default=8)
     ap.add_argument("--pairs-per-epoch", type=int, default=40000)
     ap.add_argument("--softmax-a-epochs", type=int, default=5)
+    ap.add_argument("--scramble-pairs-per-epoch", type=int, default=None, help="cap scramble Level-C pairs/epoch (clock budget)")
     ap.add_argument("--out-root", type=Path, default=None, help="run dir parent (default artifacts/lab4)")
     args = ap.parse_args()
 
@@ -75,6 +76,7 @@ def main() -> int:
         level_c_epochs=args.level_c_epochs,
         pairs_per_epoch=args.pairs_per_epoch,
         softmax_a_epochs=args.softmax_a_epochs,
+        scramble_pairs_per_epoch=args.scramble_pairs_per_epoch,
         log=_log,
     )
 
