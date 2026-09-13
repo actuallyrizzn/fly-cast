@@ -84,34 +84,36 @@ def main() -> int:
         log=_log,
     )
 
-    # Persist the trained fly (Lab 4 never did — F8 artifact-loss fix; Lab 5 desk eval needs it).
-    try:
-        import numpy as np  # noqa: PLC0415
+    # Persist the trained fly. HARD FAIL if this does not land — soft-warn ate Lab 4.
+    import numpy as np  # noqa: PLC0415
 
-        b = info["brain"]
-        ro = info["ro"]
-        np.savez_compressed(
-            out / "fly_model.npz",
-            syn_pre=b.syn_pre, syn_post=b.syn_post, syn_val=b.syn_val, inject=b.inject,
-            embed=b.embed, ro_w=ro.w, ro_b=ro.b,
-            meta=json.dumps({
-                "n_neurons": int(b.n_neurons), "leak": float(b.leak), "steps": int(b.steps),
-                "input_scale": float(b.input_scale), "gain": float(ro.gain),
-                "cfg": cfg.to_dict(),
-                "heldout_ce": float(info["heldout_ce"]),
-                "heldout_ce_level_b": float(info["heldout_ce_level_b"]),
-                "scramble_ce": float(info["scramble_ce"]),
-                "beats_bigram": bool(info.get("beats_bigram")),
-                "beats_trigram": bool(info.get("beats_trigram")),
-            }),
-        )
-        info["tok"].save(out / "tokenizer.json")
-        # Stable pointer for the talk CLI
-        latest = root_out / "LATEST"
-        latest.write_text(str(out.resolve()) + "\n", encoding="utf-8")
-        _log(f"  saved {out / 'fly_model.npz'} + tokenizer.json  LATEST→{out.name}")
-    except Exception as exc:  # noqa: BLE001
-        _log(f"  save warn: {exc}")
+    b = info["brain"]
+    ro = info["ro"]
+    model_path = out / "fly_model.npz"
+    tok_path = out / "tokenizer.json"
+    np.savez_compressed(
+        model_path,
+        syn_pre=b.syn_pre, syn_post=b.syn_post, syn_val=b.syn_val, inject=b.inject,
+        embed=b.embed, ro_w=ro.w, ro_b=ro.b,
+        meta=json.dumps({
+            "n_neurons": int(b.n_neurons), "leak": float(b.leak), "steps": int(b.steps),
+            "input_scale": float(b.input_scale), "gain": float(ro.gain),
+            "cfg": cfg.to_dict(),
+            "heldout_ce": float(info["heldout_ce"]),
+            "heldout_ce_level_b": float(info["heldout_ce_level_b"]),
+            "scramble_ce": float(info["scramble_ce"]),
+            "beats_bigram": bool(info.get("beats_bigram")),
+            "beats_trigram": bool(info.get("beats_trigram")),
+        }),
+    )
+    info["tok"].save(tok_path)
+    if not model_path.is_file() or model_path.stat().st_size < 1000:
+        raise SystemExit(f"FATAL: fly_model.npz missing or tiny after save: {model_path}")
+    if not tok_path.is_file():
+        raise SystemExit(f"FATAL: tokenizer.json missing after save: {tok_path}")
+    latest = root_out / "LATEST"
+    latest.write_text(str(out.resolve()) + "\n", encoding="utf-8")
+    _log(f"  saved {model_path} ({model_path.stat().st_size} bytes) + {tok_path}  LATEST→{out.name}")
 
     summary = {
         "lab": 4,
