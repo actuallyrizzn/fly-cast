@@ -204,7 +204,7 @@ def grok_bluf(st: dict, log_tail: str) -> str:
         "\n".join(
             [
                 f"# {LABEL} progress — write ONE short plain-English paragraph (≤80 words).",
-                "No code. Say: what stage, what the numbers mean vs bigram ~3.05, whether to stay engaged.",
+                "No code. Say: what stage, what the numbers mean vs the bigram floor in the snapshot, whether to stay engaged.",
                 "",
                 f"phase: {st['phase']}",
                 f"A held: {_fmt(st['a_held'])}  B held: {_fmt(st['b_held'])}  C held: {_fmt(st['c_held'])}  scramble: {_fmt(st['scr_held'])}",
@@ -325,7 +325,15 @@ def _mermaid_chart(st: dict) -> str:
     bi = st.get("floors", {}).get("bigram")
     if len(train) < 2:
         return ""
-    # Mermaid xychart — renders if Tasks markdown supports it; else ignored
+    vals = [v for v in train + valid if isinstance(v, (int, float))]
+    if isinstance(bi, (int, float)):
+        vals.append(float(bi))
+    lo = min(vals)
+    hi = max(vals)
+    pad = max(0.05, (hi - lo) * 0.08)
+    y0 = max(0.0, lo - pad)
+    y1 = hi + pad
+    # Mermaid xychart — y range MUST track data (Lab5 desk CE ~1.7–3.5; hardcoding 2.8→5.2 flattened it)
     lab = ", ".join(f'"{x}"' for x in labels)
     tr = ", ".join(f"{v:.3f}" for v in train)
     va = ", ".join(f"{v:.3f}" for v in valid)
@@ -334,7 +342,7 @@ def _mermaid_chart(st: dict) -> str:
         "xychart-beta",
         f'  title "{LABEL} train/valid CE (lower better)"',
         f"  x-axis [{lab}]",
-        "  y-axis \"CE\" 2.8 --> 5.2",
+        f'  y-axis "CE" {y0:.2f} --> {y1:.2f}',
         f"  line \"train\" [{tr}]",
         f"  line \"valid\" [{va}]",
     ]
@@ -363,7 +371,7 @@ def render_body(st: dict, *, bluf: str = "", lab4_alive: bool = True) -> str:
         f"**Updated:** {now} (live progress sidecar)",
         f"**Run:** `{st['run']}`",
         f"**Status:** **{status}** · phase **{st['phase']}**",
-        f"**Machine:** FlyBrain upscaled · destroy still armed **2026-09-14 01:27 UTC**",
+        f"**Machine:** FlyBrain upscaled · destroy armed **{os.environ.get('FLYBRAIN_DESTROY_AT', '2026-09-16T01:27:00Z')}**",
         "",
     ]
     if bluf:
