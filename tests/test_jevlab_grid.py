@@ -60,6 +60,16 @@ def test_grid_source_only_caches_train_and_valid() -> None:
     assert "'test'" not in text
 
 
+def test_slice_pooling_matches_halves() -> None:
+    from flycast.jevlab.grid import _slice_pooling
+    import numpy as np
+
+    wide = np.arange(12, dtype=np.float32).reshape(2, 6)
+    assert _slice_pooling(wide, "last").tolist() == [[0, 1, 2], [6, 7, 8]]
+    assert _slice_pooling(wide, "mean").tolist() == [[3, 4, 5], [9, 10, 11]]
+    assert _slice_pooling(wide, "last+mean").tolist() == wide.tolist()
+
+
 def test_from_copies_best_json(tmp_path: Path) -> None:
     root = tmp_path / "jevlab"
     src = root / "grid" / "clinc10"

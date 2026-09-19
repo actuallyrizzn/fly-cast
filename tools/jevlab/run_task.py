@@ -346,6 +346,13 @@ def run(args: argparse.Namespace) -> int:
             criteria=result["criteria"],
             **{"pass": result["pass"]},
         )
+        write_desk(
+            f"jevlab-run-{args.task}",
+            "done",
+            f"pass={result['pass']} publishable={result['publishable']}",
+            str(run_dir.name),
+            "smoke" if args.smoke else "real",
+        )
         frame(run_dir, "scoring")
         finished = datetime.now(timezone.utc)
         index = root / "runs" / "INDEX.tsv"
