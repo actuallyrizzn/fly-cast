@@ -12,8 +12,10 @@ __all__ = [
     "fit_ridge_classes",
     "fit_temperature",
     "metrics",
+    "off_by_one_acc",
     "predict_proba",
     "standardize",
+    "top_k_acc",
 ]
 
 _CHUNK = 2000
@@ -171,6 +173,25 @@ def predict_proba(head: Head, x: np.ndarray) -> np.ndarray:
     return _softmax(logits / head.temperature)
 
 
+def top_k_acc(proba: np.ndarray, y: np.ndarray, k: int = 3) -> float:
+    """Fraction of rows whose true label is among the top-k predicted classes."""
+    y = np.asarray(y, dtype=np.int64)
+    if len(y) == 0:
+        return 0.0
+    k = min(int(k), proba.shape[1])
+    top = np.argpartition(-proba, kth=k - 1, axis=1)[:, :k]
+    return float(np.any(top == y[:, None], axis=1).mean())
+
+
+def off_by_one_acc(proba: np.ndarray, y: np.ndarray) -> float:
+    """Ordinal accuracy: |argmax(p) - y| <= 1 (Bugzilla severity)."""
+    y = np.asarray(y, dtype=np.int64)
+    if len(y) == 0:
+        return 0.0
+    pred = proba.argmax(axis=1)
+    return float((np.abs(pred - y) <= 1).mean())
+
+
 def metrics(proba: np.ndarray, y: np.ndarray) -> dict:
     y = np.asarray(y, dtype=np.int64)
     n_classes = proba.shape[1]
@@ -215,4 +236,6 @@ def metrics(proba: np.ndarray, y: np.ndarray) -> dict:
         "n": int(len(y)),
         "confusion": confusion.tolist(),
         "reliability": bins,
+        "top3_acc": top_k_acc(proba, y, k=3),
+        "off_by_one_acc": off_by_one_acc(proba, y),
     }

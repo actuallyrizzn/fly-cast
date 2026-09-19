@@ -75,6 +75,9 @@ def _fit_and_score(
 ) -> None:
     from tools.jevlab.cache_features import main as cache_main
 
+    data = _data_root(root, task)
+    slices = _slice_files(data, task)
+    split_names = ["train", "valid", "test", *slices]
     cache_main(
         [
             "--task",
@@ -94,7 +97,7 @@ def _fit_and_score(
                 }
             ),
             "--splits",
-            "train,valid,test",
+            ",".join(split_names),
             "--root",
             str(root),
         ]
@@ -108,7 +111,6 @@ def _fit_and_score(
     # train may be capped — match feature rows via train_cap_ids if present.
     cap = root / "cache" / task / "train_cap_ids.json"
     if cap.exists() and len(y_train) != len(x_train):
-        data = _data_root(root, task)
         by_id = {}
         for line in (data / task / "train.tsv").read_text(encoding="utf-8").splitlines()[1:]:
             if line:
@@ -120,12 +122,27 @@ def _fit_and_score(
     head, _info = fit_ridge_classes(x_train, y_train, n_classes, x_valid=x_valid, y_valid=y_valid)
     metrics_dir = run_dir / "metrics"
     metrics_dir.mkdir(parents=True, exist_ok=True)
-    for split, x, y in (("valid", x_valid, y_valid), ("test", x_test, y_test)):
-        payload = metrics(predict_proba(head, x), y)
+    proba_dir = run_dir / "proba"
+    proba_dir.mkdir(parents=True, exist_ok=True)
+
+    def _write_split(split: str, x: np.ndarray, y: np.ndarray, *, save_proba: bool) -> None:
+        proba = predict_proba(head, x)
+        payload = metrics(proba, y)
         payload.update({"task": task, "arm": arm, "seed": seed, "split": split})
         (metrics_dir / f"{arm}_seed{seed}_{split}.json").write_text(
             json.dumps(payload, indent=2) + "\n", encoding="utf-8"
         )
+        if save_proba:
+            np.save(proba_dir / f"{arm}_seed{seed}_{split}.npy", proba.astype(np.float32))
+
+    _write_split("valid", x_valid, y_valid, save_proba=False)
+    _write_split("test", x_test, y_test, save_proba=True)
+    for slice_name in slices:
+        x_slice = np.load(
+            feature_path(root / "cache", task, arm, cfg.key(), slice_name)
+        ).astype(np.float32)
+        y_slice = _labels(root, task, slice_name)
+        _write_split(slice_name, x_slice, y_slice, save_proba=True)
 
 
 def run(args: argparse.Namespace) -> int:

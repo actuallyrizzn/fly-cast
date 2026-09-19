@@ -56,6 +56,29 @@ def test_metrics_on_four_rows() -> None:
     assert got["brier"] == pytest.approx(0.125)
     assert got["confusion"] == [[2, 0], [1, 1]]
     assert got["n"] == 4
+    assert got["top3_acc"] == 1.0  # binary: top-2 covers all
+    assert got["off_by_one_acc"] == 1.0
+
+
+def test_top3_and_off_by_one() -> None:
+    from flycast.jevlab.readout import off_by_one_acc, top_k_acc
+
+    # Three-class: true labels in ranks 1, 2, 3 of the softmax rows.
+    proba = np.array(
+        [
+            [0.6, 0.3, 0.1],  # pred 0, true 0 → top1
+            [0.1, 0.6, 0.3],  # pred 1, true 2 → top2
+            [0.5, 0.4, 0.1],  # pred 0, true 2 → not in top2 of {0,1}
+            [0.2, 0.3, 0.5],  # pred 2, true 0 → off-by-two
+        ],
+        dtype=np.float64,
+    )
+    y = np.array([0, 2, 2, 0])
+    assert top_k_acc(proba, y, k=1) == 0.25
+    assert top_k_acc(proba, y, k=2) == 0.5
+    assert top_k_acc(proba, y, k=3) == 1.0
+    # |pred-y|: 0,1,2,2 → off-by-one hits first two only
+    assert off_by_one_acc(proba, y) == 0.5
 
 
 def test_ridge_recovers_a_three_class_line() -> None:

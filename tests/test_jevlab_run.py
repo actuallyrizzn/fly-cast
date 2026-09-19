@@ -74,3 +74,10 @@ def test_smoke_run_task_bundle(tmp_path: Path) -> None:
     assert set(score["criteria"]) == {"c1", "c2", "c3"}
     assert (out / "metrics" / "fly_seed0_test.json").exists()
     assert (out / "metrics" / "tfidf_seed0_test.json").exists()
+    assert (out / "proba" / "fly_seed0_test.npy").exists()
+    test_metrics = json.loads((out / "metrics" / "fly_seed0_test.json").read_text(encoding="utf-8"))
+    assert "top3_acc" in test_metrics
+    assert "off_by_one_acc" in test_metrics
+    proba = __import__("numpy").load(out / "proba" / "fly_seed0_test.npy")
+    assert proba.ndim == 2
+    assert proba.shape[0] == test_metrics["n"]
