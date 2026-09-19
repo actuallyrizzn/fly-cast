@@ -170,6 +170,7 @@ def score_pooling_family(
     cfgs: list[ArmCfg],
     seed: int,
     train_cap: int,
+    write_derived: bool = True,
 ) -> list[dict[str, Any]]:
     """Drive the reservoir once (last+mean), then score each pooling variant.
 
@@ -258,7 +259,7 @@ def score_pooling_family(
         )
         x_train = _slice_pooling(x_train_wide, cfg.pooling)
         x_valid = _slice_pooling(x_valid_wide, cfg.pooling)
-        if cfg.pooling != "last+mean":
+        if write_derived and cfg.pooling != "last+mean":
             _write_derived_cache(
                 root=root,
                 task=task,

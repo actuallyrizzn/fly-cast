@@ -271,6 +271,7 @@ def run(args: argparse.Namespace) -> int:
             cfgs=family,
             seed=lead[2],
             train_cap=train_cap,
+            write_derived=(stage != 1),
         )
         for row, (_a, c, _s) in zip(rows, family_meta):
             _append(jsonl, row)

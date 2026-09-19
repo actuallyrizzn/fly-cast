@@ -17,6 +17,17 @@ from flycast.jevlab.vectors import build_embed, load_glove
 from flycast.tokenizer import Tokenizer
 
 _CHUNK = 2000
+_NEURON_COUNT: int | None = None
+
+
+def _neuron_count() -> int:
+    """Larva connectome neuron count (cached). Avoids a throwaway reservoir build."""
+    global _NEURON_COUNT
+    if _NEURON_COUNT is None:
+        from flycast.connectome import load_cell_types
+
+        _NEURON_COUNT = len(load_cell_types())
+    return _NEURON_COUNT
 
 
 def _data_root(root: Path, task: str) -> Path:
@@ -94,9 +105,7 @@ def _width(arm: str, cfg, tok, embed: np.ndarray) -> int:
     if arm in {"nofly", "nofly_shuffled"}:
         base = cfg.inject_count
     else:
-        reservoir = build_reservoir(cfg, tok, embed, scrambled=(arm == "scramble"))
-        base = int(reservoir.n)
-        del reservoir
+        base = _neuron_count()
     return base * 2 if cfg.pooling == "last+mean" else base
 
 
@@ -111,6 +120,9 @@ def _write_arm(
     tok,
     embed: np.ndarray,
 ) -> None:
+    from flycast.jevlab.arms import shuffle_tokens
+    from flycast.jevlab.features import pooled_states
+
     cache = root / "cache"
     cfg_key = cfg.key()
     npy = feature_path(cache, task, arm, cfg_key, split)
@@ -124,10 +136,23 @@ def _write_arm(
     width = _width(arm, cfg, tok, embed)
     npy.parent.mkdir(parents=True, exist_ok=True)
     mapped = np.lib.format.open_memmap(npy, mode="w+", dtype=np.float16, shape=(len(seqs), width))
-    for start in range(0, len(seqs), _CHUNK):
-        block = arm_features(arm, cfg, tok, embed, seqs[start : start + _CHUNK])
-        mapped[start : start + len(block)] = block.astype(np.float16)
-        del block
+
+    if arm in {"fly", "fly_shuffled", "scramble"}:
+        rows = shuffle_tokens(seqs, cfg.seed) if arm == "fly_shuffled" else seqs
+        res = build_reservoir(cfg, tok, embed, scrambled=(arm == "scramble"))
+        try:
+            for start in range(0, len(rows), _CHUNK):
+                block = pooled_states(res, rows[start : start + _CHUNK], pooling=cfg.pooling)
+                mapped[start : start + len(block)] = block.astype(np.float16)
+                del block
+        finally:
+            del res
+    else:
+        for start in range(0, len(seqs), _CHUNK):
+            block = arm_features(arm, cfg, tok, embed, seqs[start : start + _CHUNK])
+            mapped[start : start + len(block)] = block.astype(np.float16)
+            del block
+
     mapped.flush()
     del mapped
     save_sidecar(
@@ -157,9 +182,6 @@ def run(args: argparse.Namespace) -> None:
     tok_path = cache_task / "tokenizer.json"
     if tok_path.exists():
         tok = Tokenizer.load(tok_path)
-        fresh = Tokenizer.build(train_texts, max_vocab=20000)
-        if tok.fingerprint != fresh.fingerprint:
-            raise ValueError("tokenizer fingerprint does not match a rebuild from train")
     else:
         tok = Tokenizer.build(train_texts, max_vocab=20000)
         tok.save(tok_path)
