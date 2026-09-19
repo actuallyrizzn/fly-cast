@@ -19,6 +19,11 @@ def _append(jsonl: Path, row: dict) -> None:
         handle.write(json.dumps(row) + "\n")
 
 
+def _mirror_state(dirs: list[Path], **kwargs) -> None:
+    for path in dirs:
+        write_state(path, **kwargs)
+
+
 def _delete_cache(root: Path, task: str, arm: str, cfg_key: str, keep: set[str]) -> None:
     if cfg_key in keep:
         return
@@ -124,13 +129,18 @@ def run(args: argparse.Namespace) -> int:
                 keep.add(row["cfg"])
     total = len(points)
     done = 0
+    state_dirs = [task_dir]
+    if getattr(args, "watch_dir", None):
+        watch = Path(args.watch_dir).expanduser()
+        watch.mkdir(parents=True, exist_ok=True)
+        state_dirs.append(watch)
     for arm, cfg, seed in points:
         key = (arm, cfg.key(), seed)
         if key in finished:
             done += 1
             continue
-        write_state(
-            task_dir,
+        _mirror_state(
+            state_dirs,
             task=args.task,
             phase=f"grid-{stage}",
             now={
@@ -153,8 +163,8 @@ def run(args: argparse.Namespace) -> int:
         )
         _append(jsonl, row)
         done += 1
-        write_state(
-            task_dir,
+        _mirror_state(
+            state_dirs,
             progress={"done": done, "total": total},
             now={
                 "arm": arm,
@@ -169,7 +179,10 @@ def run(args: argparse.Namespace) -> int:
             _delete_cache(root, args.task, arm, cfg.key(), keep)
     if stage == 2 or args.dry_run:
         _write_best(task_dir)
-    write_state(task_dir, phase="grid-done" if stage == 2 or args.dry_run else f"grid-{stage}")
+    _mirror_state(
+        state_dirs,
+        phase="grid-done" if stage == 2 or args.dry_run else f"grid-{stage}",
+    )
     print(f"grid stage {stage} done={done}/{total}")
     return 0
 
@@ -181,6 +194,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--watch-dir",
+        type=Path,
+        default=None,
+        help="Also write state.json here for the glass watch page",
+    )
     return run(parser.parse_args(argv))
 
 
