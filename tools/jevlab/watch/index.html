@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jevlab watch</title>
+  <link rel="stylesheet" href="watch.css">
+</head>
+<body>
+  <header id="header">
+    <div id="title">jevlab</div>
+    <div id="phase">pending</div>
+    <div id="progress-wrap"><div id="progress-bar"></div></div>
+    <div id="elapsed"></div>
+  </header>
+  <section id="bars" aria-label="arm accuracy"></section>
+  <section id="confusion-wrap">
+    <h2>Confusion</h2>
+    <canvas id="confusion" width="480" height="360"></canvas>
+  </section>
+  <section id="reliability-wrap">
+    <h2>Reliability</h2>
+    <canvas id="reliability" width="640" height="320"></canvas>
+  </section>
+  <section id="latency" aria-label="latency"></section>
+  <section id="criteria" aria-label="pass criteria"></section>
+  <script src="watch.js"></script>
+</body>
+</html>
