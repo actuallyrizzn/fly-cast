@@ -51,6 +51,7 @@ def _append_index(frames: Path, filename: str, tag: str, phase: str) -> None:
 
 
 def _scrot(path: Path) -> bool:
+    """Compositor grab. Short timeout — GNOME often hangs or blanks this path."""
     if not os.environ.get("DISPLAY"):
         return False
     if not shutil.which("scrot"):
@@ -59,7 +60,7 @@ def _scrot(path: Path) -> bool:
         subprocess.run(
             ["scrot", "-q", "80", str(path)],
             check=True,
-            timeout=30,
+            timeout=5,
             capture_output=True,
         )
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
@@ -92,7 +93,7 @@ def sys_executable() -> str:
 
 
 def frame(run_dir: str | Path, tag: str) -> Path:
-    """Capture one frame into run_dir/frames/. Falls back to MISSING_<tag>.txt."""
+    """Capture one frame into run_dir/frames/. Prefer watch-URL WebKit when present."""
     run_dir = Path(run_dir)
     frames = run_dir / "frames"
     frames.mkdir(parents=True, exist_ok=True)
@@ -102,25 +103,27 @@ def frame(run_dir: str | Path, tag: str) -> Path:
     png = frames / png_name
     glass = False
 
-    if _scrot(png):
+    url_path = run_dir / "watch" / "URL"
+    url = url_path.read_text(encoding="utf-8").strip() if url_path.exists() else ""
+
+    # Prefer WebKit of the watch page when the server is up — scrot/GNOME often blanks.
+    if url and _webkit_snapshot(url, png):
+        glass = True
+    elif _scrot(png):
         glass = True
     else:
         if png.exists():
             png.unlink()
-        url_path = run_dir / "watch" / "URL"
-        url = url_path.read_text(encoding="utf-8").strip() if url_path.exists() else ""
-        if url and _webkit_snapshot(url, png):
-            glass = True
-        else:
-            missing = frames / f"MISSING_{tag}.txt"
-            missing.write_text(
-                f"no glass frame for tag={tag} at {_now()}\n"
-                f"DISPLAY={os.environ.get('DISPLAY', '')!r}\n",
-                encoding="utf-8",
-            )
-            _append_index(frames, missing.name, tag, phase)
-            write(run_dir, glass=False)
-            return missing
+        missing = frames / f"MISSING_{tag}.txt"
+        missing.write_text(
+            f"no glass frame for tag={tag} at {_now()}\n"
+            f"DISPLAY={os.environ.get('DISPLAY', '')!r}\n"
+            f"url={url!r}\n",
+            encoding="utf-8",
+        )
+        _append_index(frames, missing.name, tag, phase)
+        write(run_dir, glass=False)
+        return missing
 
     _append_index(frames, png_name, tag, phase)
     write(run_dir, glass=glass)
