@@ -26,9 +26,8 @@ def main() -> int:
         win.set_child(view)
         win.present()
 
-    # Unique id so a second watch (smoke while grid is up) does not hand off
-    # to the primary Gtk instance and exit, killing its http.server.
-    app = Gtk.Application(application_id=f"org.flycast.jevlab.watch.{os.getpid()}")
+    # Element after each dot must start with a letter (Gtk app-id rules).
+    app = Gtk.Application(application_id=f"org.flycast.jevlab.watch.p{os.getpid()}")
     app.connect("activate", on_activate)
     return app.run(None)
 

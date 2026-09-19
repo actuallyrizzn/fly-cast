@@ -51,7 +51,7 @@ def main() -> int:
             )
             return False
 
-        GLib.timeout_add(600, snap)
+        GLib.timeout_add(1500, snap)
 
     def on_snap(view, result, _data) -> None:
         try:
@@ -79,7 +79,7 @@ def main() -> int:
         print(f"url not reachable: {url}", file=sys.stderr)
         return 3
 
-    app = Gtk.Application(application_id=f"org.flycast.jevlab.snapshot.{os.getpid()}")
+    app = Gtk.Application(application_id=f"org.flycast.jevlab.snapshot.p{os.getpid()}")
 
     def activate(application: Gtk.Application) -> None:
         win = Gtk.ApplicationWindow(application=application, title="snapshot")
