@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -68,6 +70,32 @@ def test_slice_pooling_matches_halves() -> None:
     assert _slice_pooling(wide, "last").tolist() == [[0, 1, 2], [6, 7, 8]]
     assert _slice_pooling(wide, "mean").tolist() == [[3, 4, 5], [9, 10, 11]]
     assert _slice_pooling(wide, "last+mean").tolist() == wide.tolist()
+
+
+def test_pooling_family_matches_separate_score_points(tmp_path: Path) -> None:
+    """Batched last/mean/last+mean must match three solo score_point calls."""
+    from flycast.jevlab.arms import ArmCfg
+    from flycast.jevlab.grid import score_point, score_pooling_family
+
+    root = _layout(tmp_path)
+    base = dict(leak=0.5, steps=1, radius=0.9, inject_count=32, input_scale=1.0, seed=0)
+    cfgs = [
+        ArmCfg(**base, pooling="last"),
+        ArmCfg(**base, pooling="mean"),
+        ArmCfg(**base, pooling="last+mean"),
+    ]
+    family = score_pooling_family(
+        root=root, task="sst2", arm="fly", cfgs=cfgs, seed=0, train_cap=400
+    )
+    solo = [
+        score_point(root=root, task="sst2", arm="fly", cfg=cfg, seed=0, train_cap=400)
+        for cfg in cfgs
+    ]
+    assert len(family) == 3
+    for a, b in zip(family, solo):
+        assert a["cfg"] == b["cfg"]
+        assert a["valid"]["acc"] == pytest.approx(b["valid"]["acc"], abs=1e-6)
+        assert a["valid"]["nll"] == pytest.approx(b["valid"]["nll"], abs=1e-5)
 
 
 def test_from_copies_best_json(tmp_path: Path) -> None:
