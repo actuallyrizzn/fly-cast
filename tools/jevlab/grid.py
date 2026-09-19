@@ -9,7 +9,7 @@ from pathlib import Path
 
 from flycast.jevlab.arms import ArmCfg
 from flycast.jevlab.cache import feature_path, parse_cfg
-from flycast.jevlab.grid import PROTOCOL, cfg_grid, done_keys, rank_stage1, score_point
+from flycast.jevlab.grid import PROTOCOL, cfg_grid, done_keys, rank_stage1, score_pooling_family
 from flycast.jevlab.state import write as write_state
 
 
@@ -161,6 +161,10 @@ def copy_best_from(root: Path, task: str, from_task: str) -> int:
     return 0
 
 
+def _family_key(arm: str, cfg: ArmCfg, seed: int) -> tuple:
+    return (arm, cfg.leak, cfg.steps, cfg.radius, cfg.inject_count, cfg.input_scale, seed)
+
+
 def run(args: argparse.Namespace) -> int:
     root = args.root.expanduser()
     if getattr(args, "from_task", None):
@@ -183,27 +187,48 @@ def run(args: argparse.Namespace) -> int:
             for row in rank_stage1(task_dir / "stage1.jsonl", arm, top=10):
                 keep.add(row["cfg"])
     total = len(points)
-    done = 0
+    done = sum(1 for arm, cfg, seed in points if (arm, cfg.key(), seed) in finished)
     state_dirs = [task_dir]
     if getattr(args, "watch_dir", None):
         watch = Path(args.watch_dir).expanduser()
         watch.mkdir(parents=True, exist_ok=True)
         state_dirs.append(watch)
     _write_desk_status(task=args.task, stage=stage, done=done, total=total)
-    for arm, cfg, seed in points:
+
+    idx = 0
+    while idx < len(points):
+        arm, cfg, seed = points[idx]
         key = (arm, cfg.key(), seed)
         if key in finished:
-            done += 1
+            idx += 1
             continue
+        # Group consecutive unfinished points that share the reservoir (pooling varies).
+        family: list[ArmCfg] = []
+        family_meta: list[tuple[str, ArmCfg, int]] = []
+        j = idx
+        gk = _family_key(arm, cfg, seed)
+        while j < len(points):
+            a2, c2, s2 = points[j]
+            if _family_key(a2, c2, s2) != gk:
+                break
+            k2 = (a2, c2.key(), s2)
+            if k2 not in finished:
+                family.append(c2)
+                family_meta.append((a2, c2, s2))
+            j += 1
+        if not family:
+            idx = j
+            continue
+        lead = family_meta[0]
         _mirror_state(
             state_dirs,
             task=args.task,
             phase=f"grid-{stage}",
             now={
-                "arm": arm,
-                "seed": seed,
-                "cfg_key": cfg.key(),
-                "step": "fit ridge",
+                "arm": lead[0],
+                "seed": lead[2],
+                "cfg_key": lead[1].key(),
+                "step": f"fit ridge ×{len(family)} poolings",
                 "started": None,
                 "elapsed_s": 0,
             },
@@ -214,42 +239,58 @@ def run(args: argparse.Namespace) -> int:
             stage=stage,
             done=done,
             total=total,
-            arm=arm,
-            cfg_key=cfg.key(),
+            arm=lead[0],
+            cfg_key=lead[1].key(),
         )
-        row = score_point(
+        rows = score_pooling_family(
             root=root,
             task=args.task,
-            arm=arm,
-            cfg=cfg,
-            seed=seed,
+            arm=lead[0],
+            cfgs=family,
+            seed=lead[2],
             train_cap=train_cap,
         )
-        _append(jsonl, row)
-        done += 1
-        _mirror_state(
-            state_dirs,
-            progress={"done": done, "total": total},
-            now={
-                "arm": arm,
-                "seed": seed,
-                "cfg_key": cfg.key(),
-                "step": "done",
-                "started": None,
-                "elapsed_s": row["seconds"],
-            },
-        )
-        _write_desk_status(
-            task=args.task,
-            stage=stage,
-            done=done,
-            total=total,
-            arm=arm,
-            cfg_key=cfg.key(),
-            seconds=float(row["seconds"]),
-        )
-        if stage == 1:
-            _delete_cache(root, args.task, arm, cfg.key(), keep)
+        for row, (_a, c, _s) in zip(rows, family_meta):
+            _append(jsonl, row)
+            done += 1
+            finished.add((_a, c.key(), _s))
+            if stage == 1:
+                _delete_cache(root, args.task, _a, c.key(), keep)
+            _mirror_state(
+                state_dirs,
+                progress={"done": done, "total": total},
+                now={
+                    "arm": _a,
+                    "seed": _s,
+                    "cfg_key": c.key(),
+                    "step": "done",
+                    "started": None,
+                    "elapsed_s": row["seconds"],
+                },
+            )
+            _write_desk_status(
+                task=args.task,
+                stage=stage,
+                done=done,
+                total=total,
+                arm=_a,
+                cfg_key=c.key(),
+                seconds=float(row["seconds"]),
+            )
+        # Drop the shared last+mean cache unless a family member is kept.
+        wide_key = ArmCfg(
+            leak=lead[1].leak,
+            steps=lead[1].steps,
+            radius=lead[1].radius,
+            inject_count=lead[1].inject_count,
+            input_scale=lead[1].input_scale,
+            pooling="last+mean",
+            seed=lead[2],
+        ).key()
+        if stage == 1 and wide_key not in keep:
+            _delete_cache(root, args.task, lead[0], wide_key, keep)
+        idx = j
+
     if stage == 2 or args.dry_run:
         _write_best(task_dir)
     _mirror_state(
