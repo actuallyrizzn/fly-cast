@@ -56,6 +56,16 @@ Row counts and test-split sha256 are filled by cards #4292–#4295. They are ame
 
 Seeds `[0,1,2,3,4]`. Ridge lambdas `[0.1,1,10,100]`. Temperature grid `[0.25,0.5,0.75,1,1.5,2,3,4,6,8]`.
 
+### 9a. Two-stage search (disk and time)
+
+729 points at full train size is too many for the laptop. The grid script runs:
+
+1. **Stage 1 (coarse):** seed 0 only, train-cap 5000, all 729 points, ridge only, score = valid accuracy. Both fly and scramble.
+2. **Stage 2 (fine):** top 10 points per arm from stage 1, train-cap 20000, seeds 0–2, ridge only, score = mean valid accuracy.
+3. **Winner per arm** = best stage-2 mean. `nofly` reuses the fly winner's inject_count, pooling, and seed.
+
+The test split is never read by the grid. Artifacts: `grid/<task>/stage1.jsonl`, `stage2.jsonl`, `best.json`.
+
 ## 10. Pass criteria as code
 
 All three must hold on the test split for a task to pass. `publishable` = any task passes.
