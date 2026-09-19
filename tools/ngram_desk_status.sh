@@ -3,6 +3,14 @@
 set -euo pipefail
 export DISPLAY="${DISPLAY:-:0}"
 export GDK_BACKEND=x11
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+# The laptop session is Wayland. Xwayland's auth file is not ~/.Xauthority.
+if [[ -z "${XAUTHORITY:-}" || ! -f "${XAUTHORITY}" ]]; then
+  AUTH="$(ps -u "$(id -u)" -o args= | sed -n 's/.*Xwayland .* -auth \([^ ]*\).*/\1/p' | head -1)"
+  if [[ -n "$AUTH" && -f "$AUTH" ]]; then
+    export XAUTHORITY="$AUTH"
+  fi
+fi
 
 ROOT="${HOME}/fly-cast-runs/desk"
 STATUS="${HOME}/fly-cast-runs/desk_status.txt"
