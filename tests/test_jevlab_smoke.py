@@ -12,4 +12,4 @@ def test_jevlab_modules_import() -> None:
     import flycast.jevlab.state
     import flycast.jevlab.vectors
 
-    assert flycast.jevlab.data.__all__ == []
+    assert "load_split" in flycast.jevlab.data.__all__
