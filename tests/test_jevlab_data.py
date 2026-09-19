@@ -49,3 +49,13 @@ def test_verify_manifest_rejects_a_changed_file(tmp_path: Path) -> None:
     (task / "train.tsv").write_text("id\ttext\tlabel\nhacked\tno\t0\n", encoding="utf-8")
     with pytest.raises(ValueError, match="sha256"):
         verify_manifest("toy", root=tmp_path)
+
+
+def test_confusable_needs_two_shared_tokens_and_a_different_label() -> None:
+    from flycast.jevlab.data import confusable_mask
+
+    train_texts = ["set alarm now", "bake a cake"]
+    train_labels = [0, 1]
+    test_texts = ["set alarm please", "bake cake tonight"]
+    test_labels = [1, 1]
+    assert confusable_mask(train_texts, train_labels, test_texts, test_labels) == [True, False]

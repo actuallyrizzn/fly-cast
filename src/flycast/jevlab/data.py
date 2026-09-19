@@ -12,6 +12,9 @@ import numpy as np
 from flycast.tokenizer import _TOKEN_RE
 
 __all__ = [
+    "STOPWORDS",
+    "confusable_mask",
+    "content_tokens",
     "load_split",
     "sha256_file",
     "stratified_indices",
@@ -20,6 +23,8 @@ __all__ = [
     "write_manifest",
     "write_tsv",
 ]
+
+STOPWORDS = frozenset({"the", "a", "to", "me", "my", "i", "is", "what", "how"})
 
 
 def stratified_indices(labels: list[Any] | np.ndarray, n: int, seed: int) -> np.ndarray:
@@ -55,6 +60,43 @@ def stratified_indices(labels: list[Any] | np.ndarray, n: int, seed: int) -> np.
 
 def token_count(text: str) -> int:
     return len(_TOKEN_RE.findall(text.lower()))
+
+
+def content_tokens(text: str) -> set[str]:
+    return {
+        tok
+        for tok in _TOKEN_RE.findall(text.lower())
+        if tok not in STOPWORDS and tok.isalnum()
+    }
+
+
+def confusable_mask(
+    train_texts: list[str],
+    train_labels: list[int],
+    test_texts: list[str],
+    test_labels: list[int],
+) -> list[bool]:
+    """True when a test row shares two content tokens with a different-label train row."""
+    index: dict[str, list[tuple[int, int]]] = {}
+    for i, (text, label) in enumerate(zip(train_texts, train_labels)):
+        for tok in content_tokens(text):
+            index.setdefault(tok, []).append((i, label))
+    flags: list[bool] = []
+    for text, label in zip(test_texts, test_labels):
+        hits: dict[int, int] = {}
+        found = False
+        for tok in content_tokens(text):
+            for i, other in index.get(tok, ()):
+                if other == label:
+                    continue
+                hits[i] = hits.get(i, 0) + 1
+                if hits[i] >= 2:
+                    found = True
+                    break
+            if found:
+                break
+        flags.append(found)
+    return flags
 
 
 def sha256_file(path: Path) -> str:

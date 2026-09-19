@@ -40,7 +40,7 @@ What will not happen: paid inference (Lab 3 standing order), hosted Jev API, com
 
 | Task | URL | Licence | Test split | Row counts |
 |---|---|---|---|---|
-| sst2 | https://dl.fbaipublicfiles.com/glue/data/SST-2.zip | GLUE/SST-2, research use | GLUE dev.tsv (872 rows). Unlabeled GLUE test.tsv ignored. | TODO |
+| sst2 | https://dl.fbaipublicfiles.com/glue/data/SST-2.zip | GLUE/SST-2, research use | GLUE dev.tsv (872 rows). Unlabeled GLUE test.tsv ignored. sha256 `c5d4733f9738b084e064836d98a27c7ddedc9bd3d8571a39fffb2d30eedd4005` | train 64349 / valid 3000 / test 872 / negation 184 |
 | clinc150 | https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json | CC-BY-3.0 | their test + oos_test as `oos` | TODO |
 | clinc10 | same file, 10 utility intents | CC-BY-3.0 | their test, restricted | TODO |
 | bugsev | https://github.com/ansymo/msr2013-bug_dataset | TODO — copy from that README before download | stratified 10% after the 20000-row cap | TODO |
