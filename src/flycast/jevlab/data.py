@@ -17,6 +17,7 @@ __all__ = [
     "content_tokens",
     "load_split",
     "sha256_file",
+    "smoke_root",
     "stratified_indices",
     "token_count",
     "verify_manifest",
@@ -121,6 +122,11 @@ def write_manifest(directory: Path, manifest: dict[str, Any]) -> None:
     (directory / "MANIFEST.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
+
+
+def smoke_root() -> Path:
+    """Committed 400/50/50 slices. No network and no full GloVe."""
+    return Path(__file__).resolve().parents[3] / "fixtures" / "jevlab" / "smoke"
 
 
 def _task_dir(task: str, root: str | Path) -> Path:
