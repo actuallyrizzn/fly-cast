@@ -200,7 +200,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Also write state.json here for the glass watch page",
     )
-    return run(parser.parse_args(argv))
+    parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Shorthand: mirror state to <root>/runs/grid-watch",
+    )
+    args = parser.parse_args(argv)
+    if args.watch and not args.watch_dir:
+        args.watch_dir = Path(args.root).expanduser() / "runs" / "grid-watch"
+    return run(args)
 
 
 if __name__ == "__main__":
