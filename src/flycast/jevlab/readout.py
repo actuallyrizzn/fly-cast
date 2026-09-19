@@ -136,7 +136,7 @@ def fit_logistic(
     yv = np.asarray(y_valid, dtype=np.int64)
     best: tuple[float, Head] | None = None
     for c_value in cs:
-        clf = LogisticRegression(C=c_value, max_iter=2000, n_jobs=4)
+        clf = LogisticRegression(C=c_value, max_iter=2000)
         clf.fit(xs, y)
         classes = [int(c) for c in clf.classes_]
         if clf.coef_.shape[0] == 1:

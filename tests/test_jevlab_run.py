@@ -20,8 +20,10 @@ def _layout(tmp_path: Path) -> Path:
     root = tmp_path / "jevlab"
     data = root / "data" / "sst2"
     data.mkdir(parents=True)
-    for name in ("train.tsv", "valid.tsv", "test.tsv"):
-        (data / name).symlink_to(smoke / "sst2" / name)
+    for name in ("train.tsv", "valid.tsv", "test.tsv", "test_negation.tsv"):
+        target = smoke / "sst2" / name
+        if target.exists():
+            (data / name).symlink_to(target)
     vectors = root / "vectors"
     vectors.mkdir()
     (vectors / "glove.mini.txt").symlink_to(smoke / "glove.mini.txt")
@@ -75,6 +77,8 @@ def test_smoke_run_task_bundle(tmp_path: Path) -> None:
     assert (out / "metrics" / "fly_seed0_test.json").exists()
     assert (out / "metrics" / "tfidf_seed0_test.json").exists()
     assert (out / "proba" / "fly_seed0_test.npy").exists()
+    assert (out / "metrics" / "fly_seed0_test_negation.json").exists()
+    assert (out / "proba" / "fly_seed0_test_negation.npy").exists()
     test_metrics = json.loads((out / "metrics" / "fly_seed0_test.json").read_text(encoding="utf-8"))
     assert "top3_acc" in test_metrics
     assert "off_by_one_acc" in test_metrics

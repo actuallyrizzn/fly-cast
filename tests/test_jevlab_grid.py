@@ -28,8 +28,10 @@ def _layout(tmp_path: Path) -> Path:
     return root
 
 
-def test_dry_run_then_resume(tmp_path: Path) -> None:
+def test_dry_run_then_resume(tmp_path: Path, monkeypatch) -> None:
     root = _layout(tmp_path)
+    desk = tmp_path / "desk_status.txt"
+    monkeypatch.setenv("JEVLAB_DESK_STATUS", str(desk))
     argv = [
         "--task",
         "sst2",
@@ -44,6 +46,8 @@ def test_dry_run_then_resume(tmp_path: Path) -> None:
     lines = [line for line in jsonl.read_text(encoding="utf-8").splitlines() if line.strip()]
     assert len(lines) == 4
     assert (root / "grid" / "sst2" / "best.json").exists()
+    assert desk.is_file()
+    assert "jevlab-grid-sst2" in desk.read_text(encoding="utf-8")
     before = jsonl.read_text(encoding="utf-8")
     assert main(argv + ["--resume"]) == 0
     assert jsonl.read_text(encoding="utf-8") == before

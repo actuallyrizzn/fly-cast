@@ -24,6 +24,44 @@ def _mirror_state(dirs: list[Path], **kwargs) -> None:
         write_state(path, **kwargs)
 
 
+def _write_desk_status(
+    *,
+    task: str,
+    stage: int,
+    done: int,
+    total: int,
+    arm: str | None = None,
+    cfg_key: str | None = None,
+    seconds: float | None = None,
+    finished: bool = False,
+) -> None:
+    """Rewrite desk_status.txt so the ngram desk window stays live (#4318)."""
+    import os
+
+    override = os.environ.get("JEVLAB_DESK_STATUS")
+    desk = Path(override) if override else Path.home() / "fly-cast-runs" / "desk_status.txt"
+    desk.parent.mkdir(parents=True, exist_ok=True)
+    if finished:
+        body = (
+            f"jevlab-grid-{task}\n"
+            f"grid stage {stage} done\n"
+            f"{done}/{total}\n"
+            f"best.json written\n"
+            f"await APPROVED before real run_task\n"
+        )
+    else:
+        step = f"{arm} {cfg_key}" if arm and cfg_key else "…"
+        last = f"last {seconds:.0f}s" if seconds is not None else "in progress"
+        body = (
+            f"jevlab-grid-{task}\n"
+            f"grid stage {stage} (valid only)\n"
+            f"{done}/{total} · {step}\n"
+            f"{last}\n"
+            f"no real test without APPROVED\n"
+        )
+    desk.write_text(body, encoding="utf-8")
+
+
 def _delete_cache(root: Path, task: str, arm: str, cfg_key: str, keep: set[str]) -> None:
     if cfg_key in keep:
         return
@@ -155,6 +193,7 @@ def run(args: argparse.Namespace) -> int:
         watch = Path(args.watch_dir).expanduser()
         watch.mkdir(parents=True, exist_ok=True)
         state_dirs.append(watch)
+    _write_desk_status(task=args.task, stage=stage, done=done, total=total)
     for arm, cfg, seed in points:
         key = (arm, cfg.key(), seed)
         if key in finished:
@@ -173,6 +212,14 @@ def run(args: argparse.Namespace) -> int:
                 "elapsed_s": 0,
             },
             progress={"done": done, "total": total},
+        )
+        _write_desk_status(
+            task=args.task,
+            stage=stage,
+            done=done,
+            total=total,
+            arm=arm,
+            cfg_key=cfg.key(),
         )
         row = score_point(
             root=root,
@@ -196,6 +243,15 @@ def run(args: argparse.Namespace) -> int:
                 "elapsed_s": row["seconds"],
             },
         )
+        _write_desk_status(
+            task=args.task,
+            stage=stage,
+            done=done,
+            total=total,
+            arm=arm,
+            cfg_key=cfg.key(),
+            seconds=float(row["seconds"]),
+        )
         if stage == 1:
             _delete_cache(root, args.task, arm, cfg.key(), keep)
     if stage == 2 or args.dry_run:
@@ -203,6 +259,13 @@ def run(args: argparse.Namespace) -> int:
     _mirror_state(
         state_dirs,
         phase="grid-done" if stage == 2 or args.dry_run else f"grid-{stage}",
+    )
+    _write_desk_status(
+        task=args.task,
+        stage=stage,
+        done=done,
+        total=total,
+        finished=(stage == 2 or args.dry_run),
     )
     print(f"grid stage {stage} done={done}/{total}")
     return 0
