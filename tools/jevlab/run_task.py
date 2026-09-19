@@ -214,7 +214,8 @@ def run(args: argparse.Namespace) -> int:
     write_state(run_dir, task=args.task, phase="grid-done")
     frame(run_dir, "grid_done")
 
-    fly_cfg = parse_cfg(best["fly"]["cfg"])    scr_cfg = parse_cfg(best["scramble"]["cfg"])
+    fly_cfg = parse_cfg(best["fly"]["cfg"])
+    scr_cfg = parse_cfg(best["scramble"]["cfg"])
     nofly_cfg = parse_cfg(best.get("nofly", best["fly"])["cfg"])
     arm_cfg = {
         "fly": fly_cfg,
