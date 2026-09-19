@@ -55,6 +55,9 @@ flycast = ["data/*.csv.gz", "data/README.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: end-to-end smoke that may take over a minute",
+]
 addopts = [
     "--cov=flycast",
     "--cov-report=term-missing",
