@@ -21,7 +21,7 @@ from flycast.jevlab.latency import nofly_latency_ms, packet_latency_ms
 from flycast.jevlab.readout import fit_ridge_classes, metrics, predict_proba
 from flycast.jevlab.reference import tfidf_reference
 from flycast.jevlab.scorer import evaluate, publishable
-from flycast.jevlab.state import frame, write as write_state
+from flycast.jevlab.state import frame, write as write_state, write_desk
 from flycast.tokenizer import Tokenizer
 
 ARMS = ("fly", "scramble", "nofly", "fly_shuffled", "nofly_shuffled")
@@ -260,6 +260,13 @@ def run(args: argparse.Namespace) -> int:
                     phase="seeds",
                     now={"arm": arm, "seed": seed, "cfg_key": cfg.key(), "step": "fit ridge"},
                 )
+                write_desk(
+                    f"jevlab-run-{args.task}",
+                    f"seed {seed} · {arm}",
+                    f"fitting ridge",
+                    cfg.key(),
+                    "no real test without APPROVED" if not args.smoke else "smoke",
+                )
                 print(f"arm {arm} seed {seed}")
                 _fit_and_score(root, args.task, arm, cfg, run_dir, seed)
             # TF-IDF once per seed
@@ -320,6 +327,13 @@ def run(args: argparse.Namespace) -> int:
         (run_dir / "latency.json").write_text(json.dumps(latency, indent=2) + "\n", encoding="utf-8")
         write_state(run_dir, phase="scoring", latency_ms=latency)
         frame(run_dir, "latency")
+        write_desk(
+            f"jevlab-run-{args.task}",
+            "scoring",
+            "evaluating criteria",
+            "",
+            "smoke" if args.smoke else "real",
+        )
         result = evaluate(run_dir, protocol)
         result["publishable"] = publishable([result])
         (run_dir / "score.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

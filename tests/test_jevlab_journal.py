@@ -42,11 +42,45 @@ def test_journal_lists_both_runs_and_keeps_hand(tmp_path: Path) -> None:
     runs = tmp_path / "runs"
     _fake_run(runs, "sst2-aaa", "sst2", False)
     _fake_run(runs, "clinc10-bbb", "clinc10", True)
+    # slice metrics on sst2 run
+    metrics = runs / "sst2-aaa" / "metrics"
+    metrics.mkdir(parents=True, exist_ok=True)
+    (metrics / "fly_seed0_test.json").write_text(
+        json.dumps({"acc": 0.7, "top3_acc": 0.9, "off_by_one_acc": 1.0, "split": "test"}) + "\n",
+        encoding="utf-8",
+    )
+    (metrics / "fly_shuffled_seed0_test.json").write_text(
+        json.dumps({"acc": 0.55, "split": "test"}) + "\n",
+        encoding="utf-8",
+    )
+    (metrics / "nofly_seed0_test.json").write_text(
+        json.dumps({"acc": 0.65, "split": "test"}) + "\n",
+        encoding="utf-8",
+    )
+    (metrics / "nofly_shuffled_seed0_test.json").write_text(
+        json.dumps({"acc": 0.60, "split": "test"}) + "\n",
+        encoding="utf-8",
+    )
+    (metrics / "fly_seed0_test_negation.json").write_text(
+        json.dumps(
+            {
+                "acc": 0.66,
+                "top3_acc": 0.88,
+                "off_by_one_acc": 1.0,
+                "split": "test_negation",
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     hand = f"{HAND_START}\n## Reading the results\n\nkeep me\n{HAND_END}"
     first = render(runs, existing=None)
     assert "sst2-aaa" in first
     assert "clinc10-bbb" in first
     assert "publishable = true" in first.lower() or "publishable = true" in first
+    assert "test_negation" in first
+    assert "Shuffle drop" in first
+    assert "top3_acc" in first
     # inject custom hand into "existing"
     existing = first.split(HAND_START)[0] + hand
     second = render(runs, existing=existing)

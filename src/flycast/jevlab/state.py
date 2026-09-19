@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-__all__ = ["frame", "read", "write"]
+__all__ = ["frame", "read", "write", "write_desk"]
 
 
 def _now() -> str:
@@ -19,6 +19,24 @@ def _now() -> str:
 
 def _stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def write_desk(
+    job: str,
+    phase: str,
+    progress: str,
+    elapsed: str = "",
+    last: str = "",
+) -> Path:
+    """Rewrite desk_status.txt for the ngram desktop window (#4318)."""
+    override = os.environ.get("JEVLAB_DESK_STATUS")
+    path = Path(override) if override else Path.home() / "fly-cast-runs" / "desk_status.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"{job}\n{phase}\n{progress}\n{elapsed}\n{last}\n",
+        encoding="utf-8",
+    )
+    return path
 
 
 def read(run_dir: str | Path) -> dict[str, Any]:

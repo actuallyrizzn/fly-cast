@@ -36,30 +36,26 @@ def _write_desk_status(
     finished: bool = False,
 ) -> None:
     """Rewrite desk_status.txt so the ngram desk window stays live (#4318)."""
-    import os
+    from flycast.jevlab.state import write_desk
 
-    override = os.environ.get("JEVLAB_DESK_STATUS")
-    desk = Path(override) if override else Path.home() / "fly-cast-runs" / "desk_status.txt"
-    desk.parent.mkdir(parents=True, exist_ok=True)
     if finished:
-        body = (
-            f"jevlab-grid-{task}\n"
-            f"grid stage {stage} done\n"
-            f"{done}/{total}\n"
-            f"best.json written\n"
-            f"await APPROVED before real run_task\n"
+        write_desk(
+            f"jevlab-grid-{task}",
+            f"grid stage {stage} done",
+            f"{done}/{total}",
+            "best.json written",
+            "await APPROVED before real run_task",
         )
-    else:
-        step = f"{arm} {cfg_key}" if arm and cfg_key else "…"
-        last = f"last {seconds:.0f}s" if seconds is not None else "in progress"
-        body = (
-            f"jevlab-grid-{task}\n"
-            f"grid stage {stage} (valid only)\n"
-            f"{done}/{total} · {step}\n"
-            f"{last}\n"
-            f"no real test without APPROVED\n"
-        )
-    desk.write_text(body, encoding="utf-8")
+        return
+    step = f"{arm} {cfg_key}" if arm and cfg_key else "…"
+    last = f"last {seconds:.0f}s" if seconds is not None else "in progress"
+    write_desk(
+        f"jevlab-grid-{task}",
+        f"grid stage {stage} (valid only)",
+        f"{done}/{total} · {step}",
+        last,
+        "no real test without APPROVED",
+    )
 
 
 def _delete_cache(root: Path, task: str, arm: str, cfg_key: str, keep: set[str]) -> None:

@@ -96,6 +96,73 @@ def _arm_row(score: dict, arm: str) -> str:
     return f"| {arm} | {acc_s} | {brier_s} | {ece_s} |"
 
 
+def _mean_metric(metrics_dir: Path, arm: str, split: str, key: str) -> float | None:
+    """Mean of a scalar metric across seed files for one arm/split."""
+    values: list[float] = []
+    for path in sorted(metrics_dir.glob(f"{arm}_seed*_{split}.json")):
+        payload = _load_json(path) or {}
+        if payload.get("split") and payload.get("split") != split:
+            continue
+        val = payload.get(key)
+        if isinstance(val, (int, float)):
+            values.append(float(val))
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+
+def _slice_table(run: Path) -> list[str]:
+    """Build a markdown table for test_* slice metrics when present."""
+    metrics_dir = run / "metrics"
+    if not metrics_dir.is_dir():
+        return []
+    slices: set[str] = set()
+    for path in metrics_dir.glob("*_seed*_test_*.json"):
+        # fly_seed0_test_negation.json → test_negation
+        name = path.stem
+        parts = name.split("_seed", 1)
+        if len(parts) != 2:
+            continue
+        rest = parts[1]  # 0_test_negation
+        if "_test_" not in rest:
+            continue
+        slices.add("test_" + rest.split("_test_", 1)[1])
+    if not slices:
+        return []
+    lines = [
+        "Slices (mean over seeds):",
+        "",
+        "| slice | arm | acc | top3 | off-by-one |",
+        "|---|---|---|---|---|",
+    ]
+    for slice_name in sorted(slices):
+        for arm in ("fly", "scramble", "nofly", "fly_shuffled", "nofly_shuffled", "tfidf"):
+            acc = _mean_metric(metrics_dir, arm, slice_name, "acc")
+            if acc is None:
+                continue
+            top3 = _mean_metric(metrics_dir, arm, slice_name, "top3_acc")
+            obo = _mean_metric(metrics_dir, arm, slice_name, "off_by_one_acc")
+            top3_s = f"{top3:.3f}" if top3 is not None else "—"
+            obo_s = f"{obo:.3f}" if obo is not None else "—"
+            lines.append(f"| {slice_name} | {arm} | {acc:.3f} | {top3_s} | {obo_s} |")
+    lines.append("")
+    return lines
+
+
+def _shuffle_drop_line(run: Path) -> str:
+    metrics_dir = run / "metrics"
+    fly = _mean_metric(metrics_dir, "fly", "test", "acc")
+    fly_s = _mean_metric(metrics_dir, "fly_shuffled", "test", "acc")
+    nofly = _mean_metric(metrics_dir, "nofly", "test", "acc")
+    nofly_s = _mean_metric(metrics_dir, "nofly_shuffled", "test", "acc")
+    if None in (fly, fly_s, nofly, nofly_s):
+        return ""
+    return (
+        f"Shuffle drop: fly {fly - fly_s:+.3f}; nofly {nofly - nofly_s:+.3f} "
+        f"(protocol wants fly drop larger by >0.01)."
+    )
+
+
 def _extract_hand(existing: str | None) -> str:
     if not existing:
         return DEFAULT_HAND
@@ -178,6 +245,17 @@ def render(runs_root: Path, existing: str | None = None) -> str:
                 f"Latency ms (median): fly={fly_ms} nofly={nofly_ms} tfidf={tfidf_ms}",
                 "",
             ]
+            drop = _shuffle_drop_line(run)
+            if drop:
+                lines += [drop, ""]
+            lines.extend(_slice_table(run))
+            # top3 / off-by-one on full test (mean over seeds) when present
+            top3 = _mean_metric(run / "metrics", "fly", "test", "top3_acc")
+            obo = _mean_metric(run / "metrics", "fly", "test", "off_by_one_acc")
+            if top3 is not None or obo is not None:
+                top3_s = f"{top3:.3f}" if top3 is not None else "—"
+                obo_s = f"{obo:.3f}" if obo is not None else "—"
+                lines += [f"Fly test extras: top3_acc={top3_s} off_by_one_acc={obo_s}", ""]
 
     lines += ["", "## Frames", "", "(Upload scoring milestone frames from run cards; map in frame_uploads.json.)", ""]
     lines.append(_extract_hand(existing))
