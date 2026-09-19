@@ -111,8 +111,29 @@ def _write_best(task_dir: Path) -> None:
     (task_dir / "best.json").write_text(json.dumps(winners, indent=2) + "\n", encoding="utf-8")
 
 
+def copy_best_from(root: Path, task: str, from_task: str) -> int:
+    """Reuse another task's grid winner (D2: clinc150 from clinc10). Skips stages."""
+    src = root / "grid" / from_task / "best.json"
+    if not src.is_file():
+        print(f"missing source best.json: {src}", file=sys.stderr)
+        return 5
+    dest_dir = root / "grid" / task
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / "best.json"
+    payload = json.loads(src.read_text(encoding="utf-8"))
+    payload["_copied_from"] = from_task
+    dest.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"copied best.json {from_task} -> {task}")
+    return 0
+
+
 def run(args: argparse.Namespace) -> int:
     root = args.root.expanduser()
+    if getattr(args, "from_task", None):
+        return copy_best_from(root, args.task, args.from_task)
+    if args.stage is None:
+        print("--stage is required unless --from is set", file=sys.stderr)
+        return 2
     task_dir = root / "grid" / args.task
     task_dir.mkdir(parents=True, exist_ok=True)
     stage = args.stage
@@ -190,7 +211,19 @@ def run(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", required=True)
-    parser.add_argument("--stage", type=int, choices=(1, 2), required=True)
+    parser.add_argument(
+        "--stage",
+        type=int,
+        choices=(1, 2),
+        default=None,
+        help="1=coarse or 2=fine; required unless --from",
+    )
+    parser.add_argument(
+        "--from",
+        dest="from_task",
+        default=None,
+        help="Copy best.json from this task and skip the grid (e.g. clinc150 --from clinc10)",
+    )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

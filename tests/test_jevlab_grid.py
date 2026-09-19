@@ -54,3 +54,29 @@ def test_grid_source_only_caches_train_and_valid() -> None:
     assert '"train,valid"' in text
     assert '"test"' not in text
     assert "'test'" not in text
+
+
+def test_from_copies_best_json(tmp_path: Path) -> None:
+    root = tmp_path / "jevlab"
+    src = root / "grid" / "clinc10"
+    src.mkdir(parents=True)
+    payload = {"fly": {"cfg": "l0.5_s1_r0.9_i32_x1.0_plast_seed0"}, "scramble": {"cfg": "x"}}
+    (src / "best.json").write_text(json.dumps(payload) + "\n", encoding="utf-8")
+    assert (
+        main(
+            [
+                "--task",
+                "clinc150",
+                "--from",
+                "clinc10",
+                "--root",
+                str(root),
+            ]
+        )
+        == 0
+    )
+    dest = root / "grid" / "clinc150" / "best.json"
+    got = json.loads(dest.read_text(encoding="utf-8"))
+    assert got["fly"] == payload["fly"]
+    assert got["_copied_from"] == "clinc10"
+    assert main(["--task", "clinc150", "--from", "missing", "--root", str(root)]) == 5
