@@ -41,8 +41,8 @@ What will not happen: paid inference (Lab 3 standing order), hosted Jev API, com
 | Task | URL | Licence | Test split | Row counts |
 |---|---|---|---|---|
 | sst2 | https://dl.fbaipublicfiles.com/glue/data/SST-2.zip | GLUE/SST-2, research use | GLUE dev.tsv (872 rows). Unlabeled GLUE test.tsv ignored. sha256 `c5d4733f9738b084e064836d98a27c7ddedc9bd3d8571a39fffb2d30eedd4005` | train 64349 / valid 3000 / test 872 / negation 184 |
-| clinc150 | https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json | CC-BY-3.0 | their test + oos_test as `oos` | TODO |
-| clinc10 | same file, 10 utility intents | CC-BY-3.0 | their test, restricted | TODO |
+| clinc150 | https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json | CC-BY-3.0 | their test + oos_test as `oos`. sha256 `a29710b72717f17a2514df8e9a5dfc5b37dbeb5ca1ee22f2b25fbd4a17918441` | train 15100 / valid 3100 / test 5500 |
+| clinc10 | same file, 10 utility intents | CC-BY-3.0 | their test, restricted. sha256 `a229dfd59e5254930cc1053af12057ea00b5ce306666dac002562c759deb97fe` | train 1000 / valid 200 / test 300 / confusable 186 |
 | bugsev | https://github.com/ansymo/msr2013-bug_dataset | TODO — copy from that README before download | stratified 10% after the 20000-row cap | TODO |
 | glove | https://nlp.stanford.edu/data/glove.6B.zip | PDDL 1.0 | n/a (vectors) | 400000 lines expected |
 
