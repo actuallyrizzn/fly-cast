@@ -44,7 +44,7 @@ What will not happen: paid inference (Lab 3 standing order), hosted Jev API, com
 | clinc150 | https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json | CC-BY-3.0 | their test + oos_test as `oos`. sha256 `a29710b72717f17a2514df8e9a5dfc5b37dbeb5ca1ee22f2b25fbd4a17918441` | train 15100 / valid 3100 / test 5500 |
 | clinc10 | same file, 10 utility intents | CC-BY-3.0 | their test, restricted. sha256 `a229dfd59e5254930cc1053af12057ea00b5ce306666dac002562c759deb97fe` | train 1000 / valid 200 / test 300 / confusable 186 |
 | bugsev | https://github.com/ansymo/msr2013-bug_dataset | TODO — copy from that README before download | stratified 10% after the 20000-row cap | TODO |
-| glove | https://nlp.stanford.edu/data/glove.6B.zip | PDDL 1.0 | n/a (vectors) | 400000 lines expected |
+| glove | https://nlp.stanford.edu/data/glove.6B.zip | PDDL 1.0 | n/a (vectors). sha256 `95dde4dfd627ab26608d33e76d1195ec059734bd29089ea52cadb08d07c64544` | 400000 lines. SST-2 coverage 0.979 at inject 64 |
 
 Row counts and test-split sha256 are filled by cards #4292–#4295. They are amendments to this table only, not to sections 1–7.
 
