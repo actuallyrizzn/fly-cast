@@ -151,6 +151,8 @@
     const done = prog.done || 0;
     const total = prog.total || 0;
     el("progress-bar").style.width = (total ? (100 * done / total) : 0) + "%";
+    const pct = total ? ((100 * done) / total).toFixed(1) : "0.0";
+    el("progress-label").textContent = total ? (done + "/" + total + " · " + pct + "%") : "";
     const now = state.now || {};
     el("elapsed").textContent = (now.arm || "") + " " + (now.step || "") +
       (now.elapsed_s != null ? (" · " + Number(now.elapsed_s).toFixed(1) + "s") : "");

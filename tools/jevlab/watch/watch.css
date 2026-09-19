@@ -30,6 +30,11 @@ header {
   border-radius: 2px;
   overflow: hidden;
 }
+#progress-label {
+  font-size: 18px;
+  color: #c8c4be;
+  letter-spacing: 0.02em;
+}
 #progress-bar {
   height: 100%;
   width: 0;
