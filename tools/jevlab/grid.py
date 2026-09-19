@@ -24,6 +24,24 @@ def _mirror_state(dirs: list[Path], **kwargs) -> None:
         write_state(path, **kwargs)
 
 
+def _eta_line(jsonl: Path, done: int, total: int) -> str:
+    """Effective s/pt from recent attributed seconds (pooling-batched)."""
+    if not jsonl.is_file() or done >= total:
+        return "…"
+    try:
+        rows = [json.loads(line) for line in jsonl.read_text(encoding="utf-8").splitlines() if line.strip()]
+    except (OSError, json.JSONDecodeError):
+        return "…"
+    recent = rows[-15:] if rows else []
+    secs = [float(r.get("seconds") or 0.0) for r in recent if r.get("seconds") is not None]
+    if not secs:
+        return "…"
+    per_pt = sum(secs) / len(secs)
+    remain = max(0, total - done)
+    eta_h = remain * per_pt / 3600.0
+    return f"~{per_pt:.0f}s/pt · ETA ~{eta_h:.1f}h"
+
+
 def _write_desk_status(
     *,
     task: str,
@@ -34,6 +52,7 @@ def _write_desk_status(
     cfg_key: str | None = None,
     seconds: float | None = None,
     finished: bool = False,
+    jsonl: Path | None = None,
 ) -> None:
     """Rewrite desk_status.txt so the ngram desk window stays live (#4318)."""
     from flycast.jevlab.state import write_desk
@@ -48,12 +67,14 @@ def _write_desk_status(
         )
         return
     step = f"{arm} {cfg_key}" if arm and cfg_key else "…"
-    last = f"last {seconds:.0f}s" if seconds is not None else "in progress"
+    pace = _eta_line(jsonl, done, total) if jsonl is not None else (
+        f"last {seconds:.0f}s" if seconds is not None else "in progress"
+    )
     write_desk(
         f"jevlab-grid-{task}",
         f"grid stage {stage} (valid only)",
         f"{done}/{total} · {step}",
-        last,
+        pace,
         "no real test without APPROVED",
     )
 
@@ -193,7 +214,7 @@ def run(args: argparse.Namespace) -> int:
         watch = Path(args.watch_dir).expanduser()
         watch.mkdir(parents=True, exist_ok=True)
         state_dirs.append(watch)
-    _write_desk_status(task=args.task, stage=stage, done=done, total=total)
+    _write_desk_status(task=args.task, stage=stage, done=done, total=total, jsonl=jsonl)
 
     idx = 0
     while idx < len(points):
@@ -241,6 +262,7 @@ def run(args: argparse.Namespace) -> int:
             total=total,
             arm=lead[0],
             cfg_key=lead[1].key(),
+            jsonl=jsonl,
         )
         rows = score_pooling_family(
             root=root,
@@ -292,6 +314,7 @@ def run(args: argparse.Namespace) -> int:
                 arm=_a,
                 cfg_key=c.key(),
                 seconds=float(row["seconds"]),
+                jsonl=jsonl,
             )
         # Drop the shared last+mean cache unless a family member is kept.
         wide_key = ArmCfg(
@@ -319,6 +342,7 @@ def run(args: argparse.Namespace) -> int:
         done=done,
         total=total,
         finished=(stage == 2 or args.dry_run),
+        jsonl=jsonl,
     )
     print(f"grid stage {stage} done={done}/{total}")
     return 0
