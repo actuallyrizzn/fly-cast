@@ -1,0 +1,52 @@
+{
+  "grid": {
+    "leak": [0.3, 0.5, 0.8],
+    "steps": [1, 2, 4],
+    "radius": [0.7, 0.9, 1.1],
+    "inject_count": [32, 64, 128],
+    "input_scale": [0.5, 1.0, 2.0],
+    "pooling": ["last", "mean", "last+mean"]
+  },
+  "seeds": [0, 1, 2, 3, 4],
+  "ridges": [0.1, 1, 10, 100],
+  "temperatures": [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8],
+  "criteria": {
+    "c1": "fly_mean_acc - 1.96*fly_sd/sqrt(5) > scr_mean_acc + 1.96*scr_sd/sqrt(5)",
+    "c2": "fly_mean_acc >= nofly_mean_acc",
+    "c3": "(fly_acc - fly_shuffled_acc) > (nofly_acc - nofly_shuffled_acc) + 0.01",
+    "pass": "c1 and c2 and c3 on the test split",
+    "publishable": "any task passes"
+  },
+  "datasets": {
+    "sst2": {
+      "url": "https://dl.fbaipublicfiles.com/glue/data/SST-2.zip",
+      "licence": "GLUE/SST-2, research use",
+      "test_split": "GLUE dev.tsv (872 rows). GLUE test.tsv has no labels and is ignored.",
+      "row_counts": "TODO"
+    },
+    "clinc150": {
+      "url": "https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json",
+      "licence": "CC-BY-3.0 (CLINC150 / oos-eval)",
+      "test_split": "their test split, plus oos_test as label oos",
+      "row_counts": "TODO"
+    },
+    "clinc10": {
+      "url": "https://raw.githubusercontent.com/clinc/oos-eval/master/data/data_full.json",
+      "licence": "CC-BY-3.0 (CLINC150 / oos-eval)",
+      "test_split": "their test split, restricted to the 10 utility intents",
+      "row_counts": "TODO"
+    },
+    "bugsev": {
+      "url": "https://github.com/ansymo/msr2013-bug_dataset",
+      "licence": "TODO — copy from that repo README before download",
+      "test_split": "stratified 10% after the 20000-row cap",
+      "row_counts": "TODO"
+    },
+    "glove": {
+      "url": "https://nlp.stanford.edu/data/glove.6B.zip",
+      "licence": "PDDL 1.0",
+      "file": "glove.6B.100d.txt",
+      "row_counts": "400000 lines expected"
+    }
+  }
+}

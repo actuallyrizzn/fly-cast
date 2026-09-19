@@ -34,6 +34,9 @@ dev = [
 train = [
     "torch>=2.0",
 ]
+jevlab = [
+    "scikit-learn>=1.6",
+]
 
 [project.scripts]
 flycast = "flycast.cli:main"
