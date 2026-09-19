@@ -144,7 +144,8 @@
   }
 
   function render(state) {
-    el("title").textContent = "jevlab — " + (state.task || "?");
+    el("title").textContent = "Fly probe — " + (state.task || "?");
+    document.title = "Fly probe — " + (state.task || "?");
     el("phase").textContent = state.phase || "pending";
     const prog = state.progress || {};
     const done = prog.done || 0;
