@@ -27,15 +27,23 @@ if [[ ! -f "$WATCH_DIR/state.json" && ! -L "$WATCH_DIR/state.json" ]]; then
   ln -sfn "$RUN_DIR/state.json" "$WATCH_DIR/state.json"
 fi
 
-python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WATCH_DIR" &
-SERVER=$!
+start_server() {
+  python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$WATCH_DIR" &
+  SERVER=$!
+  for _ in $(seq 1 40); do
+    if curl -sf -o /dev/null "http://127.0.0.1:${PORT}/"; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
 
 FF=""
+SERVER=""
 cleanup() {
-  kill "$SERVER" 2>/dev/null || true
-  if [[ -n "${FF}" ]]; then
-    kill "$FF" 2>/dev/null || true
-  fi
+  [[ -n "${SERVER}" ]] && kill "$SERVER" 2>/dev/null || true
+  [[ -n "${FF}" ]] && kill "$FF" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -45,11 +53,13 @@ user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
 EOF
 
+start_server || { echo "http.server failed on ${PORT}" >&2; exit 1; }
+
 # Prefer Firefox; fall back to GTK4+WebKit (Firefox snap cannot open :0 here).
 FIREFOX_BIN="$(command -v firefox || true)"
 FF=""
 if [[ -n "$FIREFOX_BIN" ]]; then
-  "$FIREFOX_BIN" --no-remote --new-instance -P jevlab-watch \
+  "$FIREFOX_BIN" --no-remote --new-instance -P "jevlab-watch-$$" \
     --profile "$WATCH_DIR/ffprofile" \
     "http://127.0.0.1:${PORT}/" >/tmp/jevlab-watch-ff.log 2>&1 &
   FF=$!
@@ -78,7 +88,7 @@ for _ in $(seq 1 40); do
   sleep 0.5
 done
 
-WID="$(xdotool search --onlyvisible --name 'Fly probe' 2>/dev/null | head -1 || true)"
+WID="$(xdotool search --onlyvisible --name 'Fly probe' 2>/dev/null | tail -1 || true)"
 if [[ -n "$WID" ]]; then
   if xdotool search --name 'Clone Hero' >/dev/null 2>&1; then
     xdotool windowmove "$WID" 1380 40
@@ -89,9 +99,10 @@ if [[ -n "$WID" ]]; then
   fi
 fi
 
-if [[ -n "$FF" ]]; then
-  wait "$FF" || true
-else
-  # Keep the server up until killed via PID.
-  wait "$SERVER" || true
-fi
+# Stay up until killed; respawn http.server if it dies while the window lives.
+while kill -0 "$FF" 2>/dev/null; do
+  if ! kill -0 "$SERVER" 2>/dev/null; then
+    start_server || true
+  fi
+  sleep 2
+done

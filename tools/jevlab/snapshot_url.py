@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 
 def _auth() -> None:
@@ -63,7 +64,22 @@ def main() -> int:
             return
         app.quit()
 
-    app = Gtk.Application(application_id="org.flycast.jevlab.snapshot")
+    # Probe the URL first — refuse blank "connection refused" PNGs.
+    import urllib.error
+    import urllib.request
+
+    for _ in range(20):
+        try:
+            with urllib.request.urlopen(url, timeout=2) as resp:
+                if resp.status == 200:
+                    break
+        except (urllib.error.URLError, TimeoutError, OSError):
+            time.sleep(0.25)
+    else:
+        print(f"url not reachable: {url}", file=sys.stderr)
+        return 3
+
+    app = Gtk.Application(application_id=f"org.flycast.jevlab.snapshot.{os.getpid()}")
 
     def activate(application: Gtk.Application) -> None:
         win = Gtk.ApplicationWindow(application=application, title="snapshot")

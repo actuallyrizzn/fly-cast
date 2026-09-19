@@ -170,23 +170,34 @@ def run(args: argparse.Namespace) -> int:
         "smoke": bool(args.smoke),
     }
     (run_dir / "config.json").write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-    (run_dir / "grid_done").write_text("ok\n", encoding="utf-8")
-    write_state(run_dir, task=args.task, phase="grid-done")
-    frame(run_dir, "grid_done")
 
     watch_proc = None
     frames_proc = None
     if args.watch:
+        write_state(run_dir, task=args.task, phase="watch-start")
         watch_proc = subprocess.Popen(
             ["bash", str(repo / "tools" / "jevlab" / "watch.sh"), str(run_dir)],
             stdout=open(run_dir / "watch.log", "w"),
             stderr=subprocess.STDOUT,
         )
-        # Wait briefly for URL/PID
-        for _ in range(40):
-            if (run_dir / "watch" / "PID").exists():
-                break
+        # Wait until the page is actually serving (not just PID written).
+        ready = False
+        for _ in range(80):
+            url_path = run_dir / "watch" / "URL"
+            if url_path.exists():
+                url = url_path.read_text(encoding="utf-8").strip()
+                try:
+                    import urllib.request
+
+                    with urllib.request.urlopen(url, timeout=1) as resp:
+                        if resp.status == 200:
+                            ready = True
+                            break
+                except Exception:  # noqa: BLE001
+                    pass
             time.sleep(0.25)
+        if not ready:
+            print("watch URL never became ready", file=sys.stderr)
         if args.frames:
             frames_proc = subprocess.Popen(
                 [
@@ -199,8 +210,11 @@ def run(args: argparse.Namespace) -> int:
                 stderr=subprocess.STDOUT,
             )
 
-    fly_cfg = parse_cfg(best["fly"]["cfg"])
-    scr_cfg = parse_cfg(best["scramble"]["cfg"])
+    (run_dir / "grid_done").write_text("ok\n", encoding="utf-8")
+    write_state(run_dir, task=args.task, phase="grid-done")
+    frame(run_dir, "grid_done")
+
+    fly_cfg = parse_cfg(best["fly"]["cfg"])    scr_cfg = parse_cfg(best["scramble"]["cfg"])
     nofly_cfg = parse_cfg(best.get("nofly", best["fly"])["cfg"])
     arm_cfg = {
         "fly": fly_cfg,
