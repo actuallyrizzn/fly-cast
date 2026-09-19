@@ -256,6 +256,12 @@ def run(args: argparse.Namespace) -> int:
             finished.add((_a, c.key(), _s))
             if stage == 1:
                 _delete_cache(root, args.task, _a, c.key(), keep)
+            valid = row.get("valid") or {}
+            acc = float(valid.get("acc", 0.0))
+            brier = float(valid.get("brier", 0.0))
+            ece = float(valid.get("ece", 0.0))
+            matrix = valid.get("confusion") or []
+            labels = [str(i) for i in range(len(matrix))]
             _mirror_state(
                 state_dirs,
                 progress={"done": done, "total": total},
@@ -267,6 +273,16 @@ def run(args: argparse.Namespace) -> int:
                     "started": None,
                     "elapsed_s": row["seconds"],
                 },
+                arms={
+                    _a: {
+                        "acc": [acc, acc, acc],
+                        "brier": [brier, brier, brier],
+                        "ece": [ece, ece, ece],
+                        "seeds": 1,
+                    }
+                },
+                confusion={"arm": _a, "labels": labels, "matrix": matrix},
+                reliability={_a: valid.get("reliability") or []},
             )
             _write_desk_status(
                 task=args.task,
