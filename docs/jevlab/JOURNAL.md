@@ -1,8 +1,8 @@
 # Jev-task lab journal — fly vs controls
 
-- Generated: `2026-09-19T02:30:59Z`
+- Generated: `2026-09-19T02:31:22Z`
 - Protocol sha256: `8838fe8bec00a151a4c8b46b6ca5227ac80cac5cecae1dfe53efd3a4875361b7`
-- Git: `54ea410`
+- Git: `951ab68`
 - Protocol doc: [Doc #1392](https://tasks.decisionsciencecorp.com/admin/doc.php?id=1392)
 
 ## Runs
