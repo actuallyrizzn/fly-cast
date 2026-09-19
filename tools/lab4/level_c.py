@@ -37,11 +37,9 @@ DATA = ROOT / "artifacts" / "lab3" / "data"
 
 
 def _rebuild_wt(res: FastReservoir) -> None:
-    brain = res.brain
-    n = brain.n_neurons
-    w = np.zeros((n, n), dtype=np.float32)
-    np.add.at(w, (brain.syn_pre, brain.syn_post), brain.syn_val)
-    res.wt = np.ascontiguousarray(w.T)
+    from tools.lab2.common import wiring_matrix
+
+    res.wt = wiring_matrix(res.brain)
 
 
 def fit_level_c_softmax(

@@ -36,6 +36,7 @@ train = [
 ]
 jevlab = [
     "scikit-learn>=1.6",
+    "scipy>=1.11",
 ]
 
 [project.scripts]

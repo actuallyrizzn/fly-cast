@@ -26,7 +26,7 @@ def pooled_states(
     seqs: list[list[int]],
     *,
     pooling: str,
-    batch_lines: int = 256,
+    batch_lines: int = 512,
 ) -> np.ndarray:
     """Pool each sequence to last, mean, or last+mean. Inactive pads do not step."""
     if pooling not in {"last", "mean", "last+mean"}:

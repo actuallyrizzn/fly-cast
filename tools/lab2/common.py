@@ -1,10 +1,11 @@
-"""Lab 2 shared machinery (numpy only, ~2 GB RAM box → everything streams).
+"""Lab 2 shared machinery (numpy + scipy.sparse CSR, ~2 GB RAM box → everything streams).
 
 Fixes the Lab 1 construction faults:
   * readout trains on ALL pairs (primal ridge, gram is n_neurons², not N²)
   * eval on a real held-out split (hundreds of cue-prefixed lines), not 10 off-distribution lines
   * n-gram floors measured with the same tokenizer / same CE definition
-  * batched dense reservoir forward (BLAS) so architecture sweeps take minutes, not hours
+  * batched sparse-CSR reservoir forward (connectome ~1.3% dense) so architecture
+    sweeps take minutes, not hours
 """
 
 from __future__ import annotations
@@ -237,15 +238,31 @@ def connectome() -> Connectome:
     return _CONN
 
 
+def wiring_matrix(brain: FlyBrain):
+    """CSR form of W^T so ``(wt @ x)[post] = sum_pre val * x[pre]``."""
+    from scipy import sparse
+
+    n = brain.n_neurons
+    return sparse.csr_matrix(
+        (
+            brain.syn_val.astype(np.float32),
+            (brain.syn_post.astype(np.int64), brain.syn_pre.astype(np.int64)),
+        ),
+        shape=(n, n),
+    )
+
+
 class FastReservoir:
-    """Batched, dense-matmul twin of FlyBrain.inject_token (verified equal in tests)."""
+    """Batched sparse-CSR twin of FlyBrain.inject_token (verified equal in tests).
+
+    The larva connectome is ~1.3% dense; CSR matmul matches dense (max abs 0)
+    and is materially faster on the grid host.
+    """
 
     def __init__(self, brain: FlyBrain):
         self.brain = brain
         n = brain.n_neurons
-        w = np.zeros((n, n), dtype=np.float32)
-        np.add.at(w, (brain.syn_pre, brain.syn_post), brain.syn_val)
-        self.wt = np.ascontiguousarray(w.T)  # acc = W^T x  (acc[post] += val * x[pre])
+        self.wt = wiring_matrix(brain)
         dim = brain.embed.shape[1]
         m = np.zeros((n, dim), dtype=np.float32)
         for i, neuron in enumerate(brain.inject):
@@ -260,7 +277,10 @@ class FastReservoir:
 
     def step(self, x: np.ndarray, drive: np.ndarray) -> np.ndarray:
         a = self.brain.leak
-        for _ in range(self.brain.steps):
+        steps = int(self.brain.steps)
+        if steps == 1:
+            return (1.0 - a) * x + a * np.tanh(drive + self.wt @ x)
+        for _ in range(steps):
             x = (1.0 - a) * x + a * np.tanh(drive + self.wt @ x)
         return x
 

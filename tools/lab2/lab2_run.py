@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+from scipy import sparse
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -60,7 +61,8 @@ def train_eval(
     brain = build_brain(cfg, tok.size)
     res = FastReservoir(brain)
     if zero_wiring:
-        res.wt[:] = 0.0  # ablation: no recurrence at all; only inject drive (+ skip embeds)
+        # Sparse CSR: slice-assign is not supported; replace with an empty matrix.
+        res.wt = sparse.csr_matrix(res.wt.shape, dtype=np.float32)
     vf, vt = collect_features(res, va, cfg.skip_last_k)
     t0 = time.time()
     ro, info = fit_ridge_streaming(
