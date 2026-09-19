@@ -55,24 +55,51 @@ EOF
 
 start_server || { echo "http.server failed on ${PORT}" >&2; exit 1; }
 
-# Prefer Firefox; fall back to GTK4+WebKit (Firefox snap cannot open :0 here).
-FIREFOX_BIN="$(command -v firefox || true)"
-FF=""
-if [[ -n "$FIREFOX_BIN" ]]; then
-  "$FIREFOX_BIN" --no-remote --new-instance -P "jevlab-watch-$$" \
-    --profile "$WATCH_DIR/ffprofile" \
-    "http://127.0.0.1:${PORT}/" >/tmp/jevlab-watch-ff.log 2>&1 &
-  FF=$!
-  sleep 3
-  if ! xdotool search --onlyvisible --name 'Fly probe' >/dev/null 2>&1; then
-    kill "$FF" 2>/dev/null || true
-    FF=""
+mapfile -t BEFORE_WIDS < <(xdotool search --onlyvisible --name 'Fly probe' 2>/dev/null || true)
+
+# Prefer GTK4+WebKit — Firefox snap often cannot open :0, and a second Firefox
+# falsely "succeeds" by seeing the already-open Fly probe window.
+python3 "$REPO/tools/jevlab/watch_window.py" "http://127.0.0.1:${PORT}/" "Fly probe — sst2" \
+  >/tmp/jevlab-watch-webkit.log 2>&1 &
+FF=$!
+sleep 2
+if ! kill -0 "$FF" 2>/dev/null; then
+  FF=""
+  FIREFOX_BIN="$(command -v firefox || true)"
+  if [[ -n "$FIREFOX_BIN" ]]; then
+    "$FIREFOX_BIN" --no-remote --new-instance -P "jevlab-watch-$$" \
+      --profile "$WATCH_DIR/ffprofile" \
+      "http://127.0.0.1:${PORT}/" >/tmp/jevlab-watch-ff.log 2>&1 &
+    FF=$!
+    sleep 3
   fi
 fi
-if [[ -z "$FF" ]]; then
-  python3 "$REPO/tools/jevlab/watch_window.py" "http://127.0.0.1:${PORT}/" "Fly probe — sst2" \
-    >/tmp/jevlab-watch-webkit.log 2>&1 &
-  FF=$!
+
+# Require a NEW visible Fly probe window (not the pre-existing grid watch).
+NEW_WID=""
+for _ in $(seq 1 40); do
+  while read -r wid; do
+    skip=0
+    for old in "${BEFORE_WIDS[@]:-}"; do
+      [[ "$wid" == "$old" ]] && skip=1 && break
+    done
+    if [[ $skip -eq 0 ]]; then
+      NEW_WID="$wid"
+      break
+    fi
+  done < <(xdotool search --onlyvisible --name 'Fly probe' 2>/dev/null || true)
+  [[ -n "$NEW_WID" ]] && break
+  # If WebKit process died with no new window, stop claiming success.
+  if [[ -n "$FF" ]] && ! kill -0 "$FF" 2>/dev/null; then
+    FF=""
+    break
+  fi
+  sleep 0.5
+done
+
+if [[ -z "$FF" ]] || [[ -z "$NEW_WID" ]]; then
+  echo "watch window failed to open (FF=${FF:-none} NEW_WID=${NEW_WID:-none})" >&2
+  exit 1
 fi
 
 URL="http://127.0.0.1:${PORT}/"
@@ -80,22 +107,13 @@ echo "$URL" > "$WATCH_DIR/URL"
 echo "$$" > "$WATCH_DIR/PID"
 echo "$PORT" > "$WATCH_DIR/PORT"
 
-# Wait for a window whose title starts with Fly probe
-for _ in $(seq 1 40); do
-  if xdotool search --onlyvisible --name 'Fly probe' >/dev/null 2>&1; then
-    break
-  fi
-  sleep 0.5
-done
-
-WID="$(xdotool search --onlyvisible --name 'Fly probe' 2>/dev/null | tail -1 || true)"
-if [[ -n "$WID" ]]; then
+if [[ -n "$NEW_WID" ]]; then
   if xdotool search --name 'Clone Hero' >/dev/null 2>&1; then
-    xdotool windowmove "$WID" 1380 40
-    xdotool windowsize "$WID" 520 1000
+    xdotool windowmove "$NEW_WID" 1380 40
+    xdotool windowsize "$NEW_WID" 520 1000
   else
-    xdotool windowmove "$WID" 72 40
-    xdotool windowsize "$WID" 1600 900
+    xdotool windowmove "$NEW_WID" 72 40
+    xdotool windowsize "$NEW_WID" 1600 900
   fi
 fi
 
