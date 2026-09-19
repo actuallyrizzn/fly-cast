@@ -45,12 +45,23 @@ user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
 EOF
 
-# Prefer Firefox; fall back to the GTK desk window tip if Firefox cannot open :0.
+# Prefer Firefox; fall back to GTK4+WebKit (Firefox snap cannot open :0 here).
 FIREFOX_BIN="$(command -v firefox || true)"
+FF=""
 if [[ -n "$FIREFOX_BIN" ]]; then
   "$FIREFOX_BIN" --no-remote --new-instance -P jevlab-watch \
     --profile "$WATCH_DIR/ffprofile" \
     "http://127.0.0.1:${PORT}/" >/tmp/jevlab-watch-ff.log 2>&1 &
+  FF=$!
+  sleep 3
+  if ! xdotool search --onlyvisible --name 'Fly probe' >/dev/null 2>&1; then
+    kill "$FF" 2>/dev/null || true
+    FF=""
+  fi
+fi
+if [[ -z "$FF" ]]; then
+  python3 "$REPO/tools/jevlab/watch_window.py" "http://127.0.0.1:${PORT}/" "Fly probe — sst2" \
+    >/tmp/jevlab-watch-webkit.log 2>&1 &
   FF=$!
 fi
 
