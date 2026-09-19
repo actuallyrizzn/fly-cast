@@ -59,12 +59,12 @@ def _split(data_root: Path, task: str, split: str) -> tuple[list[str], list[str]
 
 def _train_ids(cache_task: Path, ids: list[str], labels: list[int], cap: int) -> list[str]:
     path = cache_task / "train_cap_ids.json"
+    take = min(cap, len(ids))
     if path.exists():
         saved = json.loads(path.read_text(encoding="utf-8"))
-        if int(saved["n"]) != min(cap, len(ids)):
-            raise ValueError(f"train_cap_ids.json n={saved['n']} != cap {cap}")
-        return list(saved["ids"])
-    take = min(cap, len(ids))
+        if int(saved["n"]) == take:
+            return list(saved["ids"])
+        # Cap changed (e.g. timing run at 2000 then grid at 5000) — rewrite.
     chosen = stratified_indices(labels, take, 7)
     picked = [ids[int(i)] for i in chosen]
     path.parent.mkdir(parents=True, exist_ok=True)
