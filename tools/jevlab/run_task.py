@@ -243,55 +243,64 @@ def run(args: argparse.Namespace) -> int:
     }
     started = datetime.now(timezone.utc)
     try:
-        for seed in seeds:
-            for arm in ARMS:
-                cfg = ArmCfg(
-                    leak=arm_cfg[arm].leak,
-                    steps=arm_cfg[arm].steps,
-                    radius=arm_cfg[arm].radius,
-                    inject_count=arm_cfg[arm].inject_count,
-                    input_scale=arm_cfg[arm].input_scale,
-                    pooling=arm_cfg[arm].pooling,
-                    seed=seed,
-                )
-                write_state(
-                    run_dir,
-                    task=args.task,
-                    phase="seeds",
-                    now={"arm": arm, "seed": seed, "cfg_key": cfg.key(), "step": "fit ridge"},
-                )
-                write_desk(
-                    f"jevlab-run-{args.task}",
-                    f"seed {seed} · {arm}",
-                    f"fitting ridge",
-                    cfg.key(),
-                    "no real test without APPROVED" if not args.smoke else "smoke",
-                )
-                print(f"arm {arm} seed {seed}")
-                _fit_and_score(root, args.task, arm, cfg, run_dir, seed)
-            # TF-IDF once per seed
-            data = _data_root(root, args.task)
-            train = load_split(args.task, "train", root=data)
-            valid = load_split(args.task, "valid", root=data)
-            test = load_split(args.task, "test", root=data)
-            ref = tfidf_reference(
-                [t for t, _ in train],
-                [y for _, y in train],
-                [t for t, _ in valid],
-                [y for _, y in valid],
-                [t for t, _ in test],
-                [y for _, y in test],
-                seed=seed,
-            )
-            for split in ("valid", "test"):
-                payload = dict(ref[split])
-                payload.update({"task": args.task, "arm": "tfidf", "seed": seed, "split": split})
-                (run_dir / "metrics" / f"tfidf_seed{seed}_{split}.json").write_text(
-                    json.dumps(payload, indent=2) + "\n", encoding="utf-8"
-                )
-            print(f"arm tfidf seed {seed}")
-            frame(run_dir, f"seed{seed}")
-        # Latency on winner
+        if not args.score_only:
+            for seed in seeds:
+                for arm in ARMS:
+                    cfg = ArmCfg(
+                        leak=arm_cfg[arm].leak,
+                        steps=arm_cfg[arm].steps,
+                        radius=arm_cfg[arm].radius,
+                        inject_count=arm_cfg[arm].inject_count,
+                        input_scale=arm_cfg[arm].input_scale,
+                        pooling=arm_cfg[arm].pooling,
+                        seed=seed,
+                    )
+                    metric_probe = run_dir / "metrics" / f"{arm}_seed{seed}_test.json"
+                    if metric_probe.exists():
+                        print(f"arm {arm} seed {seed} skip (metrics present)")
+                        continue
+                    write_state(
+                        run_dir,
+                        task=args.task,
+                        phase="seeds",
+                        now={"arm": arm, "seed": seed, "cfg_key": cfg.key(), "step": "fit ridge"},
+                    )
+                    write_desk(
+                        f"jevlab-run-{args.task}",
+                        f"seed {seed} · {arm}",
+                        f"fitting ridge",
+                        cfg.key(),
+                        "no real test without APPROVED" if not args.smoke else "smoke",
+                    )
+                    print(f"arm {arm} seed {seed}")
+                    _fit_and_score(root, args.task, arm, cfg, run_dir, seed)
+                # TF-IDF once per seed
+                tfidf_probe = run_dir / "metrics" / f"tfidf_seed{seed}_test.json"
+                if tfidf_probe.exists():
+                    print(f"arm tfidf seed {seed} skip (metrics present)")
+                else:
+                    data = _data_root(root, args.task)
+                    train = load_split(args.task, "train", root=data)
+                    valid = load_split(args.task, "valid", root=data)
+                    test = load_split(args.task, "test", root=data)
+                    ref = tfidf_reference(
+                        [t for t, _ in train],
+                        [y for _, y in train],
+                        [t for t, _ in valid],
+                        [y for _, y in valid],
+                        [t for t, _ in test],
+                        [y for _, y in test],
+                        seed=seed,
+                    )
+                    for split in ("valid", "test"):
+                        payload = dict(ref[split])
+                        payload.update({"task": args.task, "arm": "tfidf", "seed": seed, "split": split})
+                        (run_dir / "metrics" / f"tfidf_seed{seed}_{split}.json").write_text(
+                            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+                        )
+                    print(f"arm tfidf seed {seed}")
+                frame(run_dir, f"seed{seed}")
+        # Latency on winner — dummy head width must match pooling (last+mean = 2×n).
         write_state(run_dir, phase="latency")
         texts = [text for text, _ in load_split(args.task, "train", root=_data_root(root, args.task))][:200]
         tok = Tokenizer.load(root / "cache" / args.task / "tokenizer.json")
@@ -302,14 +311,15 @@ def run(args: argparse.Namespace) -> int:
         from flycast.jevlab.readout import Head
 
         res = build_reservoir(fly_cfg, tok, embed, scrambled=False)
+        feat_n = res.n * (2 if fly_cfg.pooling == "last+mean" else 1)
         head = Head(
-            w=np.zeros((res.n, 2), np.float32),
+            w=np.zeros((feat_n, 2), np.float32),
             b=np.zeros(2, np.float32),
             temperature=1.0,
             kind="ridge",
             lam=1.0,
-            mu=np.zeros(res.n, np.float32),
-            sd=np.ones(res.n, np.float32),
+            mu=np.zeros(feat_n, np.float32),
+            sd=np.ones(feat_n, np.float32),
         )
         fly_lat = packet_latency_ms(
             tok, res, head, texts, pooling=fly_cfg.pooling, n=min(50, len(texts)), seed=0
@@ -401,6 +411,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seeds", default=None)
     parser.add_argument("--watch", action="store_true")
     parser.add_argument("--frames", type=int, default=0, help="interval seconds; 0 = off")
+    parser.add_argument(
+        "--score-only",
+        action="store_true",
+        help="skip seed fits; run latency + scorer on an existing --out run_dir",
+    )
     return run(parser.parse_args(argv))
 
 
