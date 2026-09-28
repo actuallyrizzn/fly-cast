@@ -1,18 +1,12 @@
-Julia-1 owns one cell on our decision-model scoreboard: emotion tagging. It won that cell by twenty points. Everywhere else, somebody else took the win.
+My feed spent last week telling me Julia-1 was the tiny decision model that changes everything. A 144-million-parameter model from Supersonic Labs, runs on a CPU, Apache licensed, beats the hosted giants on their own benchmarks. So I put it on the same scoreboard where Venice’s Jev, ConvAI’s Laya, and our fruit-fly connectome model had just gone head to head.
 
-Last week I put three decision models on the same public tests: Venice’s hosted **Jev**, ConvAI’s open-weight **Laya**, and our **Flybrain**, which runs a readout on the published fruit-fly larva connectome. Everything local ran on a $350 Lenovo with no GPU. Then Supersonic Labs released **Julia-1**, a 144-million-parameter decision model built for CPU, Apache 2.0 licensed. It works like the others: you hand it a situation and a menu of options, and it hands back a pick with a probability on every option. Their model card claims strength on AG News, Emotion, typed-decisions, and MASSIVE, and flags long menus as a weak spot.
+It lost. Badly. Then we went looking for anything it was actually good at, using its own model card as the map, and we had to dig hard to find one thing. Along the way we found out why the card reads so much better than the model runs.
 
-I ran Julia twice. First on last week’s tests, the ones built to stress everybody. Then on the tests its own card names as strengths, using the full test sets.
+## Round one: the scoreboard everybody else already played on
 
-## Who trained on what
+Same four public tests as last week, same laptop — a $350 Lenovo with no GPU. Julia ran cold, exactly as published, same as Jev and Laya. (Flybrain fits a small readout layer on each test’s practice examples. That’s how it works, and we said so last week.)
 
-Jev, Laya, and Julia ran exactly as published, with no tuning on any of these tests.
-
-Flybrain keeps the connectome wiring fixed and fits a small readout layer on each test’s practice split. That practice step is part of how Flybrain works. Typed-decisions ships with no practice split, so Flybrain ran that one cold, matching question text to option text directly.
-
-## Round one: last week’s tests
-
-Julia’s menus top out around twenty options. Three of last week’s four tests fit that limit. The fourth has 151 options, so Julia sat that one out.
+Julia can only handle menus up to about twenty options, so it sat out the 151-option intent test.
 
 | Test | Rows | Julia | Jev | Laya | Flybrain |
 |---|---:|---:|---:|---:|---:|
@@ -23,81 +17,72 @@ Julia’s menus top out around twenty options. Three of last week’s four tests
 
 † Jev’s 150-intent score covers the 4,060 rows it finished before the API stopped answering.
 
-Julia landed in the 50s on sentiment and intents and at 28% on bug severity. Jev and Laya cleared 90% on the short menus, and Flybrain took the bug titles. On this set, Julia is the wrong tool.
+Movie-review sentiment is a two-option question. Positive or negative. A coin gets 50%. Julia got 57%. On ten phone intents — alarm, timer, weather, the stuff every voice assistant has handled for a decade — it got 56%, while Jev hit 99%.
 
-## Round two: Julia’s home turf
+That’s the model everybody was losing their minds over.
 
-A stress test shows you where a model breaks. To see what it’s built for, you test it on its own claims. So we pulled the four public sets from Julia’s card:
+## Round two: we played on its home field
 
-1. **AG News**: news headlines sorted into 4 topics. 7,600 rows.
-2. **DAIR Emotion**: short posts tagged with one of 6 emotions. 2,000 rows.
-3. **MASSIVE (English)**: voice-assistant commands sorted into 18 scenarios. 2,974 rows.
-4. **Typed-decisions**: 400 cases, 2,000 questions, each with its own menu.
+Don’t get me wrong — a model can be bad at general work and great at a specialty. That’s allowed. So I went to Supersonic’s own model card, pulled every benchmark they claim as a win, and ran those. Their turf, their datasets, all four models.
 
-Julia’s published pilots used 100 rows each on AG News and Emotion. We ran the full sets.
+Here’s the first thing we noticed. Their AG News and Emotion headline numbers come from **100-row pilots**. The full test sets are 7,600 and 2,000 rows. So we ran the full sets.
 
-| Test | Rows | Julia | Jev | Laya | Flybrain |
+| Test | Their card | Our run (full set) | Jev | Laya | Flybrain |
 |---|---:|---:|---:|---:|---:|
-| AG News | 7,600 | 85.1% | 88.4% | **92.9%** | 88.3% |
-| Emotion | 2,000 | **79.9%** | 59.0% | 59.3% | 57.7% |
-| MASSIVE (English) | 2,974 | 50.4% | 79.1% | 57.5% | **81.9%** |
-| Typed-decisions | 2,000 Qs | 72.6% | **74.1%** | 36.2% | 29.1%‡ |
+| AG News (news topics) | 94% on 100 rows | 85.1% on 7,600 | 88.4% | **92.9%** | 88.3% |
+| Emotion | 86% on 100 rows | **79.9%** on 2,000 | 59.0% | 59.3% | 57.7% |
+| MASSIVE (English voice commands) | 86.75% | 50.4% | 79.1% | 57.5% | **81.9%** |
+| Typed-decisions | 72.55% | 72.55% | **74.1%** | 36.2% | 29.1%‡ |
 
-‡ Flybrain ran typed-decisions cold (no practice split).
+‡ Typed-decisions has no practice split, so Flybrain ran it cold.
 
-**Emotion is Julia’s.** Julia scored 80% where the other three sat at 59%. The rows are short first-person lines (“I feel so…”) with six emotion labels. That is exactly the job Julia was trained for, and it shows.
+Go down that table one row at a time.
 
-**AG News went to Laya** at 93%. Julia came third at 85%. Sorting headlines by topic is a different skill from reading emotion.
+**AG News.** Their card says 94%. On the full set, Julia comes in at 85% — dead last of the four. Our fruit fly beat it. The 94% only exists on the hundred rows they chose to publish.
 
-**Typed-decisions went to Jev** by a point and a half. Julia scored 72.55%, which matches its published CPU number to the decimal. The weights are what Supersonic says they are.
+**Emotion.** This one’s real. Julia scored 80% where everybody else sat around 59%. It’s the one job it does well: short first-person posts (“I feel so…”) tagged with one of six emotions. Credit where it’s due. It still came in six points under the card, and the card’s 86%-vs-48% gap over Jev shrinks to 80-vs-59 once you stop scoring a hundred hand-picked rows.
 
-**MASSIVE went to Flybrain** at 82%. Julia scored 50%, while its card claims 87% on English. The gap comes from the menu wording. Supersonic never published the option descriptions it used for MASSIVE, so we wrote our own over the real Amazon utterances and labels. The 87% figure can’t be reproduced from what they’ve released. Emotion and typed-decisions reproduce cleanly.
+**MASSIVE.** Their card claims 86.75% on English. Same 2,974 rows, same weights: we got 50%. We tried everything we could think of to close that gap and couldn’t. And here’s the kicker — Supersonic never published the option wording they fed the model for this test. On a decision model, the menu wording *is* the test. You can’t check their number, because they kept the part that produces it.
 
-The whole Jev bill for round two came to about 25 cents.
+**Typed-decisions.** We matched their number to the hundredth: 72.55%. So the weights are real and the harness works. I want to be fair about that, because it matters. When they publish the full recipe, their number holds up. Where they don’t, it doesn’t. And even on typed, hosted Jev beat it.
 
-## Where Julia earns a spot
+So that’s the pattern. The benchmark we can fully reproduce checks out. The two headline wins come from hundred-row samples that fall apart at full size. The biggest number on the card can’t be reproduced at all, because the setup that produced it was never released. Call it whatever you want. I call that stacking the deck.
 
-The Emotion set is Twitter-style posts labeled sadness, joy, love, anger, fear, or surprise. Julia hit very high scores on anger, joy, love, fear, and surprise. Sadness was its soft spot, and Jev beat it there.
+The whole Jev bill for all of this came to about 25 cents. Checking a model card is cheap. As far as I can tell, nobody hyping this one on my feed bothered.
 
-If you’re tagging short user messages by mood or tone from a small menu, on a CPU, Julia belongs in your lineup. For topic sorting, big intent catalogs, or multi-question agent work, last week’s picks still apply.
+## Where Julia actually belongs
 
-## Same $350 laptop
+One slot. If you need to tag short messages by mood — angry, happy, scared — from a small menu, on a CPU, Julia is legitimately good at that. Better than every other model on our board. Its soft spot even there is sadness, where Jev beats it.
 
-Julia, Laya, and Flybrain all ran on the same Lenovo IdeaPad Slim 3: Intel i3-N305, 8 GB of RAM, no GPU, Ubuntu. Jev ran on Venice’s servers.
-
-## How I’d pick now
+For everything else we tested, pick something else:
 
 | If you need… | Reach for… | Because… |
 |---|---|---|
-| Top accuracy on a short, clean menu, and a cloud call is fine | **Jev** | Won typed-decisions here; won short intents and sentiment last week |
-| Near-top accuracy on your own hardware, sorting by topic | **Laya** | Won AG News at 93% |
-| Labels hidden in thin text, and you have labeled examples | **Flybrain** | 78% on bug titles last week, against 49% and 30% |
-| Answers in milliseconds on hardware you own | **Flybrain** | 2–5 ms a row last week, against ~435 ms hosted |
-| Mood or tone tags on short text, small menu, CPU | **Julia** | 80% on Emotion, against 59% for the field |
-| Menus with 100+ options | **Jev** while it stays up, or long-window **Laya** | Julia’s menus top out around twenty |
+| Top accuracy on a short menu, cloud is fine | **Jev** | 94–99% on sentiment and intents; won typed-decisions |
+| Near-top accuracy on your own hardware | **Laya** | Won AG News at 93% |
+| Labels hidden in thin text, and you have labeled examples | **Flybrain** | 78% on bug titles vs 49% and 30%; won MASSIVE |
+| Answers in milliseconds on hardware you own | **Flybrain** | 2–5 ms a row vs ~435 ms hosted |
+| Mood tags on short text, CPU only | **Julia** | 80% on Emotion vs 59% for the field |
+| Menus with 100+ options | **Jev**, or long-window **Laya** | Julia tops out around twenty |
 
-Flybrain’s wins depend on having labeled examples for your menu, so it can fit that small readout layer before it goes to work. Jev and Julia take a fresh menu on every call.
+## The bottom line
 
-## Bottom line
+The launch told us Julia beats the big models. The full test sets told us it’s a mood tagger with a marketing department. It’s a useful mood tagger, and I’ll route that exact job to it. The rest of the card needs to come with the full test sets and the prompts, or it doesn’t belong on the card.
 
-Last week taught me that finishing the job and reading thin signals matter as much as raw accuracy. This week taught me specialty. Four models, and each one owns different turf.
+Want to check us? The test files are frozen, the scoring is public, and last week’s post has the whole setup: [Same questions, three decision systems — fly connectome on a $350 laptop vs Jev vs Laya](https://www.decisionsciencecorp.com/blog/post.php?slug=same-questions-three-decision-systems).
 
-Route the call to whoever owns the turf.
-
-Last week’s post: [Same questions, three decision systems — fly connectome on a $350 laptop vs Jev vs Laya](https://www.decisionsciencecorp.com/blog/post.php?slug=same-questions-three-decision-systems)
-
-## Appendix: the models and the tests
+## Appendix: how we ran it
 
 | Model | How we called it | Where it ran |
 |---|---|---|
 | Jev | `POST https://api.venice.ai/api/v1/decisions`, model `jev-latest` | Venice |
 | Laya | published `convaiinnovations/laya` checkpoints | The laptop |
-| Julia-1 | `SupersonicLabs/Julia-1` | The laptop |
+| Julia-1 | `SupersonicLabs/Julia-1`, as published | The laptop |
 | Flybrain | larva connectome + small readout layer | The laptop |
 
-Each model saw only the row’s text plus the menu.
+Each model saw the row’s text plus the menu, nothing else.
 
-- **AG News**: World / Sports / Business / Sci-Tech.
-- **Emotion**: sadness / joy / love / anger / fear / surprise.
-- **MASSIVE (English)**: 18 scenario labels. We wrote the option descriptions.
-- **Typed-decisions**: pinned LocalLLaMA set, 400 cases and 2,000 questions across choice, score, and yes/no formats.
+- **AG News**: 7,600 headlines, 4 topics (World / Sports / Business / Sci-Tech).
+- **Emotion**: 2,000 posts, 6 labels (sadness / joy / love / anger / fear / surprise).
+- **MASSIVE (English)**: 2,974 voice-assistant commands, 18 scenarios. Supersonic didn’t publish their option wording, so we wrote ours over the real Amazon utterances and labels.
+- **Typed-decisions**: the pinned LocalLLaMA set Supersonic uses — 400 cases, 2,000 questions.
