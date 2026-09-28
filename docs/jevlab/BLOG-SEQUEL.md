@@ -2,6 +2,8 @@ My feed spent last week telling me Julia-1 was the tiny decision model that chan
 
 It lost. Badly. Then we went looking for anything it was actually good at, using its own model card as the map, and we had to dig hard to find one thing. Along the way we found out why the card reads so much better than the model runs.
 
+![Julia-1 model card claims vs. our full-test-set results](illustrations/julia/julia-card-vs-full-set.png)
+
 ## Round one: the scoreboard everybody else already played on
 
 Same four public tests as last week, same laptop — a $350 Lenovo with no GPU. Julia ran cold, exactly as published, same as Jev and Laya. (Flybrain fits a small readout layer on each test’s practice examples. That’s how it works, and we said so last week.)
@@ -17,7 +19,9 @@ Julia can only handle menus up to about twenty options, so it sat out the 151-op
 
 † Jev’s 150-intent score covers the 4,060 rows it finished before the API stopped answering.
 
-Movie-review sentiment is a two-option question. Positive or negative. A coin gets 50%. Julia got 57%. On ten phone intents — alarm, timer, weather, the stuff every voice assistant has handled for a decade — it got 56%, while Jev hit 99%.
+![Round one: Julia-1 vs. Jev, Laya, and Flybrain on the shared scoreboard](illustrations/julia/julia-round-one.png)
+
+Movie-review sentiment is a two-option question. Positive or negative. A coin gets 50%. Julia got 57%. On ten phone intents — alarm, timer, weather, the stuff every voice assistant has handled for a decade — it got 56%, while Jev hit 99%. Bug severity is a three-option question, so a random pick gets 33%. Julia got 28%. That’s worse than guessing.
 
 That’s the model everybody was losing their minds over.
 
@@ -36,11 +40,15 @@ Here’s the first thing we noticed. Their AG News and Emotion headline numbers 
 
 ‡ Typed-decisions has no practice split, so Flybrain ran it cold.
 
+![Round two: Julia-1's own benchmarks on full test sets, with the model card's numbers outlined](illustrations/julia/julia-round-two.png)
+
 Go down that table one row at a time.
 
 **AG News.** Their card says 94%. On the full set, Julia comes in at 85% — dead last of the four. Our fruit fly beat it. The 94% only exists on the hundred rows they chose to publish.
 
-**Emotion.** This one’s real. Julia scored 80% where everybody else sat around 59%. It’s the one job it does well: short first-person posts (“I feel so…”) tagged with one of six emotions. Credit where it’s due. It still came in six points under the card, and the card’s 86%-vs-48% gap over Jev shrinks to 80-vs-59 once you stop scoring a hundred hand-picked rows.
+**Emotion.** This one’s real. Julia scored 80% where everybody else sat around 59%. It’s the one job it does well: short first-person posts (“I feel so…”) tagged with one of six emotions. Credit where it’s due. It still came in six points under the card, and the card’s 86%-vs-48% gap over Jev shrinks to 80-vs-59 once you score all 2,000 rows instead of a hundred.
+
+![Emotion: Julia-1's lead over Jev on the card vs. at full size](illustrations/julia/julia-emotion-gap.png)
 
 **MASSIVE.** Their card claims 86.75% on English. Same 2,974 rows, same weights: we got 50%. We tried everything we could think of to close that gap and couldn’t. And here’s the kicker — Supersonic never published the option wording they fed the model for this test. On a decision model, the menu wording *is* the test. You can’t check their number, because they kept the part that produces it.
 
@@ -48,11 +56,15 @@ Go down that table one row at a time.
 
 So that’s the pattern. The benchmark we can fully reproduce checks out. The two headline wins come from hundred-row samples that fall apart at full size. The biggest number on the card can’t be reproduced at all, because the setup that produced it was never released. Call it whatever you want. I call that stacking the deck.
 
+![Flowchart: where the recipe was published the number held up; where it wasn't, it didn't](illustrations/julia/julia-card-check-flow.png)
+
 The whole Jev bill for all of this came to about 25 cents. Checking a model card is cheap. As far as I can tell, nobody hyping this one on my feed bothered.
 
 ## Where Julia actually belongs
 
-One slot. If you need to tag short messages by mood — angry, happy, scared — from a small menu, on a CPU, Julia is legitimately good at that. Better than every other model on our board. Its soft spot even there is sadness, where Jev beats it.
+One slot. If you need to tag short messages by mood — angry, happy, scared — from a small menu, on a CPU, Julia is legitimately good at that. Better than every other model on our board. Its soft spot even there is sadness, the second-biggest slice of the test, where every other model on the board beats it.
+
+![Emotion accuracy mood by mood for all four models](illustrations/julia/julia-emotion-by-mood.png)
 
 For everything else we tested, pick something else:
 
@@ -64,6 +76,8 @@ For everything else we tested, pick something else:
 | Answers in milliseconds on hardware you own | **Flybrain** | 2–5 ms a row vs ~435 ms hosted |
 | Mood tags on short text, CPU only | **Julia** | 80% on Emotion vs 59% for the field |
 | Menus with 100+ options | **Jev**, or long-window **Laya** | Julia tops out around twenty |
+
+![Flowchart: which decision model to use for which job](illustrations/julia/julia-which-model-flow.png)
 
 ## The bottom line
 
